@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Punch Logic">
+  <defs>
+    <linearGradient id="pl-teal" x1="18" x2="110" y1="14" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#62ead8"/>
+      <stop offset="1" stop-color="#268da2"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="#061318"/>
+  <rect x="18" y="18" width="92" height="92" rx="24" fill="url(#pl-teal)"/>
+  <path d="M43 66l15 15 32-42" fill="none" stroke="#061318" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M86 28h20v20" fill="none" stroke="#061318" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

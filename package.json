@@ -1,0 +1,13 @@
+{
+  "name": "punch-logic-home-acceptance",
+  "private": true,
+  "scripts": {
+    "test:security": "node tests/security-controls.test.cjs && node tests/offline-sync.test.cjs",
+    "start": "netlify dev",
+    "preview": "node server.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "netlify-cli": "^17.38.1"
+  }
+}

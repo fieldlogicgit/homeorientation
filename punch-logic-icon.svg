@@ -1,0 +1,7 @@
+<svg width="230" height="230" viewBox="0 0 230 230" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Punch Logic icon</title>
+  <desc>A blue rounded square with a bold white letter P and orange accent notch.</desc>
+  <rect x="35" y="35" width="160" height="160" rx="28" fill="#125ea8"/>
+  <path d="M155 155 L195 155 L195 195 L155 195 Q155 155 155 155 Z" fill="#ff5722"/>
+  <text x="110" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="104" font-weight="700" fill="#ffffff">P</text>
+</svg>

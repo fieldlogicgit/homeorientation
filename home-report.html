@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#05090e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Punch Logic" />
+    <title>Site Item Report</title>
+    <link rel="icon" href="punch-logic-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="stylesheet" href="tokens.css?v=1" />
+    <link rel="stylesheet" href="report.css?v=22" />
+  </head>
+  <body>
+    <main class="report-shell">
+      <header class="report-header">
+        <div class="report-brand">
+          <a class="brand-home-link" href="http://punchlogic.app" target="_blank" rel="noopener noreferrer" aria-label="Open Punch Logic website">
+            <img class="report-logo combined-logo" src="punch-logic-combined-logo.svg" alt="Punch Logic" />
+          </a>
+          <div>
+            <h1 id="reportTitle">Site report</h1>
+          </div>
+          <button class="report-language-toggle" id="reportLanguageToggle" type="button" data-i18n-skip>Español</button>
+        </div>
+        <p id="reportMeta" class="muted"></p>
+        <div class="sync-control report-sync-control" data-sync-control data-sync-state="synced">
+          <button class="sync-icon-button" type="button" data-sync-button title="Sync saved changes" aria-label="Sync saved changes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"></path><path d="M4 18v-5h5"></path><path d="M18.4 9A7 7 0 0 0 6.2 6.2L4 8"></path><path d="M5.6 15A7 7 0 0 0 17.8 17.8L20 16"></path></svg>
+          </button>
+          <div class="sync-copy"><strong data-sync-status>Synced</strong><small data-sync-last>Last sync: not yet</small></div>
+          <span class="sync-count" data-sync-count aria-hidden="true"></span>
+        </div>
+      </header>
+
+      <section class="home-card" id="homeDetails"></section>
+
+      <section class="toolbar">
+        <label>
+          <span>Sort by</span>
+          <select id="sortSelect">
+            <option value="added">Item added</option>
+            <option value="trade">Crew</option>
+            <option value="location">Location</option>
+            <option value="tradeCompleted">Crew completed</option>
+          </select>
+        </label>
+      </section>
+
+      <section id="issueList" class="issue-list"></section>
+    </main>
+
+    <script src="supabase-config.js?v=3"></script>
+    <script src="client-branding.js?v=1"></script>
+    <script src="settings-translations.js?v=1"></script>
+    <script src="report-language.js?v=3"></script>
+    <script src="offline-sync.js?v=2"></script>
+    <script src="report-offline-sync.js?v=2"></script>
+    <script src="punchlogic-pdf.js?v=2"></script>
+    <script src="report-pdf.js?v=2"></script>
+    <script src="home-report.js?v=31"></script>
+  </body>
+</html>

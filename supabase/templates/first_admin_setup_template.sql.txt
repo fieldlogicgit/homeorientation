@@ -1,0 +1,29 @@
+-- Optional first-admin setup template.
+-- Do not put this file in supabase/migrations unless the placeholders have been replaced.
+-- The automation script creates users through the app/Netlify function flow instead of running this as a migration.
+
+insert into public.organizations (id, name)
+values (
+  '00000000-0000-0000-0000-000000000001',
+  'Your Company'
+)
+on conflict (id) do update
+set name = excluded.name;
+
+insert into public.profiles (
+  id,
+  organization_id,
+  display_name,
+  role
+)
+values (
+  'PASTE_AUTH_USER_ID_HERE',
+  '00000000-0000-0000-0000-000000000001',
+  'Admin',
+  'admin'
+)
+on conflict (id) do update
+set
+  organization_id = excluded.organization_id,
+  display_name = excluded.display_name,
+  role = excluded.role;

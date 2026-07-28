@@ -1,0 +1,21 @@
+{
+  "name": "Punch Logic",
+  "short_name": "Punch Logic",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#05090e",
+  "theme_color": "#05090e",
+  "icons": [
+    {
+      "src": "punch-logic-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "punch-logic-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

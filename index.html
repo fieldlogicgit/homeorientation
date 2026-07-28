@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#05090e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Punch Logic" />
+    <title>Punch Logic Home Acceptance</title>
+    <link rel="icon" href="punch-logic-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="stylesheet" href="tokens.css?v=1" />
+    <link rel="stylesheet" href="styles.css?v=98" />
+  </head>
+  <body>
+    <div class="auth-screen" id="authScreen">
+      <section class="lock-panel" aria-label="Website login">
+        <p class="eyebrow">Secure Login</p>
+        <h1>Sign in</h1>
+        <p class="helper">Enter your email and password to open the app.</p>
+        <input id="authUsernameInput" type="email" autocomplete="username" placeholder="Email" />
+        <input id="authPasswordInput" type="password" autocomplete="current-password" placeholder="Password" />
+        <button class="primary-button" id="authLoginButton" type="button">Sign in</button>
+        <button class="auth-link-button" id="forgotPasswordButton" type="button">Forgot password?</button>
+        <p class="pin-error" id="authError"></p>
+      </section>
+    </div>
+
+    <div class="auth-screen" id="passwordResetScreen">
+      <section class="lock-panel" aria-label="Choose a new password">
+        <p class="eyebrow">Account Recovery</p>
+        <h1>New password</h1>
+        <p class="helper">Enter a new password for your Punch Logic account.</p>
+        <input id="newPasswordInput" type="password" autocomplete="new-password" minlength="8" placeholder="New password" />
+        <input id="confirmPasswordInput" type="password" autocomplete="new-password" minlength="8" placeholder="Confirm password" />
+        <button class="primary-button" id="saveNewPasswordButton" type="button">Save password</button>
+        <p class="pin-error" id="passwordResetError"></p>
+      </section>
+    </div>
+
+    <div class="lock-screen" id="lockScreen">
+      <section class="lock-panel" aria-label="PIN security">
+        <p class="eyebrow">Secure Access</p>
+        <h1 id="pinTitle">Enter PIN</h1>
+        <p class="helper" id="pinHelper">Enter your PIN to open the app.</p>
+        <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="PIN" />
+        <button class="primary-button" id="pinSubmitButton" type="button">Unlock</button>
+        <p class="pin-error" id="pinError"></p>
+      </section>
+    </div>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="app-brand">
+          <a class="brand-home-link" href="http://punchlogic.app" target="_blank" rel="noopener noreferrer" aria-label="Open Punch Logic website">
+            <img class="app-logo" src="punch-logic-combined-logo.svg" alt="Punch Logic" />
+          </a>
+        </div>
+        <div class="topbar-actions">
+          <button class="field-notification-button" id="fieldNotificationButton" type="button" aria-label="Crew report notifications" aria-expanded="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+            <span id="fieldNotificationCount" aria-hidden="true"></span>
+          </button>
+          <div class="sync-control" data-sync-control data-sync-state="synced">
+            <button class="sync-icon-button" type="button" data-sync-button title="Sync saved changes">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"></path><path d="M4 18v-5h5"></path><path d="M18.4 9A7 7 0 0 0 6.2 6.2L4 8"></path><path d="M5.6 15A7 7 0 0 0 17.8 17.8L20 16"></path></svg>
+            </button>
+            <div class="sync-copy"><strong data-sync-status>Synced</strong><small data-sync-last>Last sync: not yet</small></div>
+            <span class="sync-count" data-sync-count aria-hidden="true"></span>
+          </div>
+        </div>
+      </header>
+
+      <section class="field-notification-panel hidden" id="fieldNotificationPanel" aria-label="Crew report notifications">
+        <div class="field-notification-header">
+          <strong>Notifications</strong>
+          <button class="field-notification-close" id="fieldNotificationClose" type="button" aria-label="Close notifications">&times;</button>
+        </div>
+        <div class="field-notification-list" id="fieldNotificationList"></div>
+      </section>
+
+      <section class="menu-panel popup-panel" id="browserReportPanel" aria-label="Site reports">
+        <div class="popup-title">Site Reports</div>
+        <div id="browserReportOptions" class="popup-options"></div>
+      </section>
+
+      <section class="app-page active" id="punchListPage">
+        <section class="panel homeowner-details-panel" aria-label="Home and homeowner details">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Home acceptance</p>
+              <h1>Home details</h1>
+            </div>
+            <span class="details-save-status" id="homeDetailsSaveStatus" aria-live="polite">Saved</span>
+          </div>
+          <div class="home-details-grid">
+            <label>
+              <span>Community</span>
+              <input id="homeCommunityInput" type="text" autocomplete="organization" placeholder="Community name" />
+            </label>
+            <label>
+              <span>Address</span>
+              <input id="homeAddressInput" type="text" autocomplete="street-address" placeholder="Home address" />
+            </label>
+            <label>
+              <span>Homebuyer 1 name</span>
+              <input id="homebuyer1NameInput" type="text" autocomplete="name" placeholder="Full name" />
+            </label>
+            <label>
+              <span>Homebuyer 1 email</span>
+              <input id="homebuyer1EmailInput" type="email" autocomplete="email" placeholder="name@example.com" />
+            </label>
+            <label>
+              <span>Homebuyer 2 name</span>
+              <input id="homebuyer2NameInput" type="text" autocomplete="name" placeholder="Full name (optional)" />
+            </label>
+            <label>
+              <span>Homebuyer 2 email</span>
+              <input id="homebuyer2EmailInput" type="email" autocomplete="email" placeholder="name@example.com" />
+            </label>
+          </div>
+        </section>
+
+        <div class="legacy-site-selectors" aria-hidden="true">
+        <section class="panel community-panel" aria-label="Projects">
+          <div class="panel-header">
+            <label for="communitySelect">Project</label>
+            <div class="button-pair card-action-pair">
+              <button class="card-action-button" id="addCommunityButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5v14"></path>
+                  <path d="M5 12h14"></path>
+                </svg>
+                <span>Add</span>
+              </button>
+              <button class="card-action-button" id="renameCommunityButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                </svg>
+                <span>Rename</span>
+              </button>
+            </div>
+          </div>
+          <select id="communitySelect"></select>
+          <div id="communityDetails" class="homesite-details"></div>
+        </section>
+
+        <section class="panel homesite-panel" aria-label="Sites">
+          <div class="panel-header">
+            <label for="homesiteSelect">Site</label>
+            <div class="button-pair card-action-pair">
+              <button class="card-action-button" id="addHomesiteButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5v14"></path>
+                  <path d="M5 12h14"></path>
+                </svg>
+                <span>Add</span>
+              </button>
+              <button class="card-action-button" id="importHomesitesButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12"></path>
+                  <path d="m7 8 5-5 5 5"></path>
+                  <path d="M5 21h14"></path>
+                </svg>
+                <span>Import .XLSX</span>
+              </button>
+              <button class="card-action-button" id="downloadHomesitesButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12"></path>
+                  <path d="m7 10 5 5 5-5"></path>
+                  <path d="M5 21h14"></path>
+                </svg>
+                <span>Download .XLSX</span>
+              </button>
+              <button class="card-action-button" id="renameHomesiteButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                </svg>
+                <span>Rename</span>
+              </button>
+            </div>
+          </div>
+          <select id="homesiteSelect"></select>
+          <input id="homesiteImportInput" class="hidden-file" type="file" accept=".xlsx,.xls,.csv" />
+          <div id="homesiteDetails" class="homesite-details"></div>
+          <section class="inline-site-form hidden" id="inlineSiteForm" aria-label="Add site form">
+            <label>
+              <span>Site name</span>
+              <input id="newSiteNameInput" type="text" autocomplete="off" placeholder="Site name" />
+            </label>
+            <label>
+              <span>Project</span>
+              <select id="newSiteProjectSelect"></select>
+            </label>
+            <label>
+              <span>Address</span>
+              <input id="newSiteAddressInput" type="text" autocomplete="street-address" placeholder="Site address" />
+            </label>
+            <label>
+              <span>Permit</span>
+              <input id="newSitePermitInput" type="text" autocomplete="off" placeholder="Permit number" />
+            </label>
+            <div class="site-custom-fields" id="newSiteCustomFields"></div>
+            <div class="site-form-actions">
+              <button class="mini-button" id="addSiteFieldButton" type="button">Add field</button>
+              <button class="mini-button" id="cancelSiteFormButton" type="button">Cancel</button>
+              <button class="mini-button" id="saveSiteFormButton" type="button">Save site</button>
+            </div>
+          </section>
+        </section>
+        </div>
+
+        <section class="panel form-panel" id="issueEntryForm" aria-label="Add item">
+          <div class="field-grid">
+            <label>
+              <span>Location</span>
+              <select id="roomSelect"></select>
+            </label>
+
+            <label>
+              <span>Location detail</span>
+              <input id="locationDetailInput" type="text" autocomplete="off" placeholder="Exact area, floor, grid, or note" />
+            </label>
+
+            <label>
+              <span>Crew</span>
+              <div class="field-with-action">
+                <select id="tradeSelect"></select>
+                <button class="mini-button" id="quickAddTradeButton" type="button">Add</button>
+              </div>
+            </label>
+
+            <label>
+              <span>Item</span>
+              <div class="field-with-action">
+                <select id="issueSelect"></select>
+                <button class="mini-button" id="quickAddIssueButton" type="button">Add</button>
+              </div>
+            </label>
+          </div>
+          <label class="notes-field">
+            <span>Notes</span>
+            <textarea id="notesInput" rows="3" placeholder="Add details or photo reference"></textarea>
+          </label>
+
+          <div class="photo-field">
+            <span>Pictures</span>
+            <div class="photo-actions">
+              <label class="photo-button" for="cameraInput">Take photo</label>
+              <label class="photo-button secondary" for="photoInput">Choose pictures</label>
+            </div>
+            <input id="cameraInput" class="hidden-file" type="file" accept="image/*" capture="environment" />
+            <input id="photoInput" class="hidden-file" type="file" accept="image/*" multiple />
+          </div>
+          <div id="photoPreview" class="photo-preview" aria-live="polite"></div>
+
+          <button class="primary-button" id="addIssueButton" type="button">Add item</button>
+        </section>
+
+        <section class="summary-band" aria-label="Site summary">
+          <div>
+            <span id="issueCount">0</span>
+            <small>open items</small>
+          </div>
+          <div>
+            <span id="tradeCount">0</span>
+            <small>crews assigned</small>
+          </div>
+        </section>
+
+        <section class="issue-section" aria-label="Item list">
+          <div class="section-title">
+            <h2>Items</h2>
+            <div class="button-pair issue-actions">
+              <label class="issue-sort">
+                <span>Sort</span>
+                <select id="issueSortSelect" aria-label="Sort items">
+                  <option value="added">Added</option>
+                  <option value="trade">Crew</option>
+                  <option value="location">Location</option>
+                  <option value="tradeCompleted">Crew done</option>
+                </select>
+              </label>
+              <button class="action-icon pdf-button" id="homePdfButton" type="button" aria-label="Share Site PDF" title="Share Site PDF">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 3h9l3 3v15H6z"></path>
+                  <path d="M15 3v4h4"></path>
+                  <path d="M8 14h8"></path>
+                  <path d="M8 18h5"></path>
+                </svg>
+                <span>Share PDF</span>
+              </button>
+              <button class="action-icon pdf-button" id="downloadHomePdfButton" type="button" aria-label="Download PDF" title="Download PDF">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12"></path>
+                  <path d="m7 10 5 5 5-5"></path>
+                  <path d="M5 21h14"></path>
+                </svg>
+                <span>DL PDF</span>
+              </button>
+              <button class="action-icon pdf-button" id="openHomeReportButton" type="button" aria-label="Open Browser Report" title="Open Browser Report">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <path d="M3 12h18"></path>
+                  <path d="M12 3a13 13 0 0 1 0 18"></path>
+                  <path d="M12 3a13 13 0 0 0 0 18"></path>
+                </svg>
+                <span>Web Report</span>
+              </button>
+              <button class="text-button danger clear-home-button" id="clearHomesiteButton" type="button">Clear</button>
+            </div>
+          </div>
+          <div id="issueList" class="issue-list"></div>
+        </section>
+
+        <section class="panel email-panel" aria-label="Send items to crews">
+          <h2>Send by crew</h2>
+          <p class="helper">Creates one message for this site with only the selected crew's items.</p>
+          <div id="emailActions" class="email-actions"></div>
+        </section>
+
+        <section class="issue-section completed-section minimized" id="completedSection" aria-label="Completed items">
+          <div class="section-title">
+            <h2>Completed Items <span id="completedCount" class="count-pill">0</span></h2>
+            <button class="text-button" id="toggleCompletedButton" type="button">Show</button>
+          </div>
+          <div id="completedIssueList" class="issue-list"></div>
+        </section>
+      </section>
+
+      <section class="app-page" id="homeownerSignoffPage">
+        <section class="signoff-document" aria-label="Homeowner signoff document">
+          <header class="signoff-header">
+            <div>
+              <p class="eyebrow">Final walkthrough</p>
+              <h1>Homeowner Signoff</h1>
+            </div>
+            <span class="signoff-status" id="signoffStatus">Awaiting signatures</span>
+          </header>
+
+          <dl class="signoff-home-summary">
+            <div><dt>Community</dt><dd id="signoffCommunity">—</dd></div>
+            <div><dt>Address</dt><dd id="signoffAddress">—</dd></div>
+            <div><dt>Homeowner 1</dt><dd id="signoffBuyer1">—</dd></div>
+            <div><dt>Homeowner 2</dt><dd id="signoffBuyer2">—</dd></div>
+          </dl>
+
+          <section class="signoff-items-section">
+            <div class="section-title">
+              <h2>Completed items <span id="signoffCompletedCount" class="count-pill">0</span></h2>
+            </div>
+            <div id="signoffCompletedItems" class="signoff-item-list"></div>
+          </section>
+
+          <section class="signoff-items-section">
+            <div class="section-title">
+              <h2>Open items <span id="signoffOpenCount" class="count-pill">0</span></h2>
+            </div>
+            <div id="signoffOpenItems" class="signoff-item-list"></div>
+          </section>
+
+          <section class="signature-section">
+            <h2>Homeowner acceptance</h2>
+            <p class="helper">Each listed homeowner signs below to acknowledge the completed and outstanding items above.</p>
+            <div class="signature-row" data-signature-row="1">
+              <div class="signature-identity">
+                <strong id="signatureBuyer1Name">Homeowner 1</strong>
+                <small id="signatureBuyer1Email"></small>
+              </div>
+              <div class="signature-line">
+                <img id="signatureBuyer1Image" alt="Homeowner 1 signature" />
+              </div>
+              <button class="signature-button" type="button" data-signature-for="1">Click to sign</button>
+            </div>
+            <div class="signature-row" data-signature-row="2">
+              <div class="signature-identity">
+                <strong id="signatureBuyer2Name">Homeowner 2</strong>
+                <small id="signatureBuyer2Email"></small>
+              </div>
+              <div class="signature-line">
+                <img id="signatureBuyer2Image" alt="Homeowner 2 signature" />
+              </div>
+              <button class="signature-button" type="button" data-signature-for="2">Click to sign</button>
+            </div>
+          </section>
+
+          <button class="primary-button accept-home-button" id="acceptHomeButton" type="button" disabled>
+            Accept home &amp; generate signed PDF
+          </button>
+          <p class="acceptance-note" id="acceptanceNote" aria-live="polite">Homeowner signatures are required before acceptance.</p>
+        </section>
+      </section>
+
+      <section class="app-page" id="contactsPage">
+        <section class="panel contacts-panel" aria-label="Contacts">
+          <div class="panel-header">
+            <label for="contactSearch">Contacts</label>
+            <div class="button-pair card-action-pair">
+              <button class="card-action-button" id="addContactButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5v14"></path>
+                  <path d="M5 12h14"></path>
+                </svg>
+                <span>Add</span>
+              </button>
+              <button class="card-action-button" id="saveContactsButton" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12"></path>
+                  <path d="m7 10 5 5 5-5"></path>
+                  <path d="M5 21h14"></path>
+                </svg>
+                <span>Download .XLSX</span>
+              </button>
+              <span id="contactCount" class="count-pill">0</span>
+            </div>
+          </div>
+          <input id="contactSearch" type="search" placeholder="Search contacts" />
+          <label class="contact-filter">
+            <span>Filter</span>
+            <select id="contactTradeFilter"></select>
+          </label>
+        </section>
+        <section class="panel contact-form-panel hidden" id="contactFormPanel" aria-label="Add contact">
+          <form id="contactForm">
+            <div class="panel-header">
+              <h2>Add contact</h2>
+              <button class="text-button" id="cancelContactButton" type="button">Cancel</button>
+            </div>
+            <div class="contact-form-grid">
+              <label>
+                <span>Name</span>
+                <input id="contactTradeTypeInput" type="text" autocomplete="off" />
+              </label>
+              <label>
+                <span>Company</span>
+                <input id="contactVendorInput" type="text" autocomplete="organization" />
+              </label>
+              <label>
+                <span>Job Desc</span>
+                <input id="contactJobDescInput" type="text" autocomplete="off" />
+              </label>
+              <label class="hidden">
+                <span>Name</span>
+                <input id="contactNameInput" type="text" autocomplete="name" />
+              </label>
+              <label>
+                <span>Email</span>
+                <input id="contactEmailInput" type="email" autocomplete="email" />
+              </label>
+              <label>
+                <span>Phone</span>
+                <input id="contactPhoneInput" type="tel" autocomplete="tel" />
+              </label>
+              <label class="wide-field">
+                <span>Alternative contact</span>
+                <input id="contactAlternateInput" type="text" autocomplete="off" />
+              </label>
+            </div>
+            <button class="primary-button" type="submit">Save contact</button>
+          </form>
+        </section>
+        <div id="contactList" class="contact-list"></div>
+      </section>
+
+      <section class="app-page" id="homesiteInfoPage">
+        <section class="panel info-panel" aria-label="Site info filters">
+          <div class="panel-header">
+            <label for="infoSearch">Site Info</label>
+            <span id="infoCount" class="count-pill">0</span>
+          </div>
+          <input id="infoSearch" type="search" placeholder="Search site, address, permit" />
+          <div class="info-filters">
+            <label>
+              <span>Project</span>
+              <select id="infoCommunityFilter"></select>
+            </label>
+          </div>
+        </section>
+        <div id="homesiteInfoList" class="homesite-info-list"></div>
+      </section>
+
+      <section class="app-page" id="allReportsPage">
+        <section class="panel all-reports-panel" aria-label="Items Dashboard">
+          <div class="panel-header">
+            <label for="allCommunityFilter">Items Dashboard</label>
+            <span id="allReportsCount" class="count-pill">0</span>
+          </div>
+          <div class="info-filters">
+            <label>
+              <span>Project</span>
+              <select id="allCommunityFilter"></select>
+            </label>
+            <label>
+              <span>Site</span>
+              <select id="allSiteFilter"></select>
+            </label>
+            <label>
+              <span>Crew</span>
+              <select id="allTradeFilter"></select>
+            </label>
+          </div>
+          <div class="all-report-links" id="allTradeReportLinkActions"></div>
+        </section>
+        <div id="allReportIssueList" class="issue-list"></div>
+      </section>
+
+      <section class="app-page" id="settingsPage">
+        <section class="panel settings-panel" data-settings-section="account" aria-label="Settings">
+          <div class="settings-section-title settings-collapsible-title">
+            <button class="settings-collapse-toggle" type="button" data-settings-collapse-toggle aria-expanded="true" aria-controls="settingsAccountContent">
+              <span class="settings-collapse-heading">Settings</span>
+              <span class="settings-collapse-chevron" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="settings-collapsible-content" id="settingsAccountContent">
+            <div class="settings-actions">
+              <button class="menu-item hidden" id="changePasswordButton" type="button">Change Password</button>
+              <button class="menu-item" id="changePinButton" type="button">Change PIN</button>
+              <button class="menu-item danger" id="lockAppButton" type="button">Lock App</button>
+              <button class="menu-item" id="themeToggleButton" type="button">Dark Mode</button>
+              <button class="menu-item" id="languageToggleButton" type="button" data-i18n-skip>Español</button>
+              <button class="menu-item danger hidden" id="signOutButton" type="button">Sign Out</button>
+            </div>
+            <p class="settings-account-status" id="settingsAccountStatus" aria-live="polite"></p>
+          </div>
+        </section>
+
+        <section class="panel settings-panel" data-settings-section="locations" aria-label="Manage locations">
+          <div class="settings-section-title settings-collapsible-title">
+            <button class="settings-collapse-toggle" type="button" data-settings-collapse-toggle aria-expanded="true" aria-controls="settingsLocationsContent">
+              <span class="settings-collapse-heading">Locations</span>
+              <span class="settings-collapse-chevron" aria-hidden="true"></span>
+            </button>
+            <button class="mini-button" id="addRoomButton" type="button">Add</button>
+          </div>
+          <div class="settings-collapsible-content" id="settingsLocationsContent">
+            <div class="settings-list" id="settingsLocationList"></div>
+          </div>
+        </section>
+
+        <section class="panel settings-panel" data-settings-section="crews" aria-label="Manage crews">
+          <div class="settings-section-title settings-collapsible-title">
+            <button class="settings-collapse-toggle" type="button" data-settings-collapse-toggle aria-expanded="true" aria-controls="settingsCrewsContent">
+              <span class="settings-collapse-heading">Crews</span>
+              <span class="settings-collapse-chevron" aria-hidden="true"></span>
+            </button>
+            <button class="mini-button" id="addTradeButton" type="button">Add</button>
+          </div>
+          <div class="settings-collapsible-content" id="settingsCrewsContent">
+            <div class="settings-list" id="settingsTradeList"></div>
+          </div>
+        </section>
+
+        <section class="panel settings-panel" data-settings-section="items" aria-label="Manage items">
+          <div class="settings-section-title settings-collapsible-title">
+            <button class="settings-collapse-toggle" type="button" data-settings-collapse-toggle aria-expanded="true" aria-controls="settingsItemsContent">
+              <span class="settings-collapse-heading">Items</span>
+              <span class="settings-collapse-chevron" aria-hidden="true"></span>
+            </button>
+            <button class="mini-button" id="addSavedIssueButton" type="button">Add</button>
+          </div>
+          <div class="settings-collapsible-content" id="settingsItemsContent">
+            <label class="settings-select">
+              <span>Crew</span>
+              <select id="settingsItemTradeSelect"></select>
+            </label>
+            <div class="settings-list" id="settingsItemList"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="document-modal hidden" id="changePasswordModal" role="dialog" aria-modal="true" aria-labelledby="changePasswordTitle">
+      <section class="document-modal-panel account-password-panel">
+        <header class="document-modal-header">
+          <div>
+            <span class="eyebrow">Account Security</span>
+            <h2 id="changePasswordTitle">Change Password</h2>
+          </div>
+          <button class="document-icon-button" id="closeChangePasswordButton" type="button" aria-label="Close change password">&times;</button>
+        </header>
+        <form class="account-password-form" id="changePasswordForm">
+          <p class="helper wide">Enter your current password and choose a new password.</p>
+          <label class="wide">
+            <span>Current password</span>
+            <input id="currentPasswordInput" type="password" autocomplete="current-password" required />
+          </label>
+          <label>
+            <span>New password</span>
+            <input id="settingsNewPasswordInput" type="password" autocomplete="new-password" minlength="8" required />
+          </label>
+          <label>
+            <span>Confirm password</span>
+            <input id="settingsConfirmPasswordInput" type="password" autocomplete="new-password" minlength="8" required />
+          </label>
+          <p class="pin-error wide" id="changePasswordError" aria-live="polite"></p>
+          <div class="document-form-actions wide">
+            <button class="mini-button" id="cancelChangePasswordButton" type="button">Cancel</button>
+            <button class="mini-button primary" id="saveChangedPasswordButton" type="submit">Save password</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="document-modal hidden" id="siteDocumentsModal" role="dialog" aria-modal="true" aria-labelledby="siteDocumentsTitle">
+      <section class="document-modal-panel">
+        <header class="document-modal-header">
+          <div>
+            <span class="eyebrow">Site documents</span>
+            <h2 id="siteDocumentsTitle">Documents</h2>
+          </div>
+          <button class="document-icon-button" id="closeSiteDocumentsButton" type="button" aria-label="Close documents">&times;</button>
+        </header>
+
+        <div class="document-toolbar">
+          <input id="siteDocumentSearch" type="search" placeholder="Search documents" aria-label="Search documents" />
+          <button class="mini-button" id="showDocumentUploadButton" type="button">Add document</button>
+        </div>
+
+        <form class="document-upload-form hidden" id="siteDocumentForm">
+          <input id="siteDocumentId" type="hidden" />
+          <label class="document-file-field" id="siteDocumentFileField">
+            <span>File</span>
+            <input id="siteDocumentFile" type="file" accept=".pdf,.docx,.xlsx,.csv,.jpg,.jpeg,.png,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,image/jpeg,image/png,image/webp" />
+            <small>PDF, DOCX, XLSX, CSV, JPG, PNG, or WebP. Maximum 25 MB.</small>
+          </label>
+          <label>
+            <span>Document name</span>
+            <input id="siteDocumentName" type="text" maxlength="160" placeholder="Example: Electrical Floor Plan" required />
+          </label>
+          <label>
+            <span>Document Type</span>
+            <input id="siteDocumentCategory" type="text" maxlength="100" placeholder="Example: Permit or Blueprint" required />
+          </label>
+          <label>
+            <span>Document date</span>
+            <input id="siteDocumentDate" type="date" />
+          </label>
+          <label class="document-checkbox-field wide">
+            <input id="siteDocumentQuickAccess" type="checkbox" />
+            <span><strong>Quick Access</strong><small>Show a direct button on the site card.</small></span>
+          </label>
+          <label class="wide">
+            <span>Description</span>
+            <textarea id="siteDocumentDescription" rows="3" maxlength="1000" placeholder="Optional document notes"></textarea>
+          </label>
+          <div class="document-form-actions wide">
+            <button class="mini-button" id="cancelSiteDocumentButton" type="button">Cancel</button>
+            <button class="mini-button primary" id="saveSiteDocumentButton" type="submit">Upload document</button>
+          </div>
+        </form>
+
+        <p class="document-status" id="siteDocumentStatus" aria-live="polite"></p>
+        <div class="document-list" id="siteDocumentList"></div>
+      </section>
+    </div>
+
+    <div class="signature-modal hidden" id="signatureModal" role="dialog" aria-modal="true" aria-labelledby="signatureModalTitle">
+      <section class="signature-modal-panel">
+        <div class="signature-modal-header">
+          <div>
+            <p class="eyebrow">Electronic signature</p>
+            <h2 id="signatureModalTitle">Sign below</h2>
+          </div>
+          <button class="signature-close-button" id="closeSignatureButton" type="button" aria-label="Close signature tool">&times;</button>
+        </div>
+        <p class="signature-orientation-note">For more room, turn your phone or tablet to landscape.</p>
+        <div class="signature-canvas-wrap">
+          <canvas id="signatureCanvas" aria-label="Signature drawing area"></canvas>
+        </div>
+        <div class="signature-modal-actions">
+          <button class="mini-button" id="clearSignatureButton" type="button">Clear</button>
+          <button class="primary-button" id="acceptSignatureButton" type="button">Accept signature</button>
+        </div>
+      </section>
+    </div>
+
+    <nav class="bottom-nav" aria-label="App navigation">
+      <button class="bottom-tab active" data-page-target="punchListPage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 6h13"></path>
+          <path d="M8 12h13"></path>
+          <path d="M8 18h13"></path>
+          <path d="M3 6h.01"></path>
+          <path d="M3 12h.01"></path>
+          <path d="M3 18h.01"></path>
+        </svg>
+        <span>Items</span>
+      </button>
+      <button class="bottom-tab" data-page-target="homeownerSignoffPage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 20c4-1 6-4 8-8l3-6 3 3-6 3c-4 2-7 4-8 8Z"></path>
+          <path d="M14 7l3 3"></path>
+        </svg>
+        <span>Signoff</span>
+      </button>
+      <button class="bottom-tab" data-page-target="contactsPage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-8 0v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Contacts</span>
+      </button>
+      <button class="bottom-tab" data-page-target="homesiteInfoPage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 21h16"></path>
+          <path d="M6 21V5h12v16"></path>
+          <path d="M9 9h.01"></path>
+          <path d="M12 9h.01"></path>
+          <path d="M15 9h.01"></path>
+          <path d="M9 13h.01"></path>
+          <path d="M12 13h.01"></path>
+          <path d="M15 13h.01"></path>
+          <path d="M10 21v-4h4v4"></path>
+        </svg>
+        <span>Sites</span>
+      </button>
+      <button class="bottom-tab" data-page-target="allReportsPage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 5h16"></path>
+          <path d="M4 12h16"></path>
+          <path d="M4 19h16"></path>
+          <path d="M8 5v14"></path>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="bottom-tab" data-page-target="settingsPage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.1.4.31.75.6 1 .3.26.68.4 1.1.4H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.6Z"></path>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <template id="issueTemplate">
+      <article class="issue-card">
+        <div class="issue-main">
+          <div class="issue-details"></div>
+          <div class="issue-photos"></div>
+        </div>
+        <button class="remove-button" type="button" aria-label="Remove item">x</button>
+      </article>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+    <script src="vendor/qrcode.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+    <script src="contacts-data.js?v=4"></script>
+    <script src="homesite-info-data.js?v=2"></script>
+    <script src="homesites-data.js?v=21"></script>
+    <script src="supabase-config.js?v=3"></script>
+    <script src="client-branding.js?v=1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8" integrity="sha384-Tve8O+C6PBzsIMK/IRCwHbi8fyEzXIlIs6OfVBZHubplwYhaQF/4Mzxqgg+pp/oy" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/lucide@1.25.0/dist/umd/lucide.min.js" integrity="sha384-UoXAhqcCCjwD94x4CCSExEHvtO49AfNiY7g/IxDgrPtx4U6o6tvy1cScx9v/RrS9" crossorigin="anonymous"></script>
+    <script src="upload-security.js?v=1"></script>
+    <script src="offline-sync.js?v=2"></script>
+    <script src="settings-translations.js?v=1"></script>
+    <script src="password-visibility.js?v=1"></script>
+    <script src="punchlogic-pdf.js?v=2"></script>
+    <script src="app.js?v=168"></script>
+  </body>
+</html>

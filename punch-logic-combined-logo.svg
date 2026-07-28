@@ -1,0 +1,9 @@
+<svg width="680" height="230" viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Punch Logic combined logo</title>
+  <desc>The Punch Logic combined logo with P square icon and wordmark.</desc>
+  <rect x="40" y="30" width="160" height="160" rx="28" fill="#125ea8"/>
+  <path d="M160 150 L200 150 L200 190 L160 190 Q160 150 160 150 Z" fill="#ff5722"/>
+  <text x="115" y="140" text-anchor="middle" font-family="Arial, sans-serif" font-size="104" font-weight="700" fill="#ffffff">P</text>
+  <text x="230" y="128" font-family="Arial, sans-serif" font-size="56" font-weight="500" fill="#125ea8">punch</text>
+  <text x="386" y="128" font-family="Arial, sans-serif" font-size="56" font-weight="700" fill="#ff5722">logic</text>
+</svg>
