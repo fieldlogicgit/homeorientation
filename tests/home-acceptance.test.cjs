@@ -13,15 +13,17 @@ const migration = fs.readFileSync(
   "utf8"
 );
 
-test("home details and signoff are the first two navigation tabs", () => {
+test("home details and signoff lead the simplified navigation", () => {
   const itemsTab = html.indexOf('data-page-target="punchListPage"');
   const signoffTab = html.indexOf('data-page-target="homeownerSignoffPage"');
-  const contactsTab = html.indexOf('data-page-target="contactsPage"');
-  assert.ok(itemsTab > -1 && signoffTab > itemsTab && contactsTab > signoffTab);
+  assert.ok(itemsTab > -1 && signoffTab > itemsTab);
+  assert.doesNotMatch(html, /data-page-target="contactsPage"/);
+  assert.doesNotMatch(html, /data-page-target="homesiteInfoPage"/);
   assert.match(html, /id="homeCommunityInput"/);
   assert.match(html, /id="homeAddressInput"/);
   assert.match(html, /id="homebuyer1NameInput"/);
   assert.match(html, /id="homebuyer2EmailInput"/);
+  assert.match(css, /\.home-details-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
 });
 
 test("signature tool supports touch drawing, acceptance, and signed PDF generation", () => {
