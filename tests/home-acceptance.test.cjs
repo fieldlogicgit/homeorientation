@@ -41,7 +41,7 @@ test("select home leads the active-home workflow navigation", () => {
 test("home details save into selectable records and signed homes can be archived", () => {
   assert.match(app, /function startNewHome\(\)/);
   assert.match(app, /function renderActiveHomeList\(\)/);
-  assert.match(app, /renderActiveHomeList\(\);\s*renderArchivedHomeList\(\);\s*renderHomeownerSignoff\(\);/s);
+  assert.match(app, /renderActiveHomeList\(\);[\s\S]*?renderArchivedHomeList\(\);[\s\S]*?renderHomeownerSignoff\(\);/s);
   assert.match(app, /async function archiveAcceptedHome\(\)/);
   assert.match(app, /\.update\(\{ archived_at: archivedAt \}\)/);
   assert.match(app, /function restoreArchivedHome\(/);
@@ -57,21 +57,30 @@ test("photos require a selected Supabase-backed home before upload", () => {
 
 test("signature tool supports touch drawing, acceptance, and signed PDF generation", () => {
   assert.match(html, /id="signatureCanvas"/);
+  assert.match(html, /id="initialsCanvas"/);
   assert.match(html, /turn your phone or tablet to landscape/i);
-  assert.match(html, /class="signature-signing-area"[\s\S]*?data-signature-for="1"[\s\S]*?class="signature-line"/);
-  assert.match(html, /data-signature-for="1" aria-label="Sign for homeowner 1"[\s\S]*?<svg/);
+  assert.match(html, /data-adopt-signature-for="1"[\s\S]*?Adopt signature for Homeowner 1/);
+  assert.match(html, /data-apply-mark-for="1" data-mark-type="signature"/);
+  assert.match(html, /data-apply-mark-for="1" data-mark-type="initials"/);
   assert.doesNotMatch(html, />Click to sign<\/button>/);
-  assert.match(app, /signatureCanvas\.addEventListener\("pointerdown"/);
+  assert.match(app, /installDrawingCanvasEvents\(signatureCanvas\)/);
+  assert.match(app, /installDrawingCanvasEvents\(initialsCanvas\)/);
   assert.match(app, /function acceptDrawnSignature/);
-  assert.match(app, /requestAnimationFrame\(\(\) => \{\s*clearSignatureCanvas\(\);\s*resizeSignatureCanvas\(\);/s);
-  assert.match(app, /function closeSignatureTool\(\)\s*\{\s*clearSignatureCanvas\(\);/s);
+  assert.match(app, /requestAnimationFrame\(\(\) => \{\s*clearAdoptionCanvases\(\);\s*resizeSignatureCanvas\(\);/s);
+  assert.match(app, /function closeSignatureTool\(\)\s*\{\s*clearAdoptionCanvases\(\);/s);
+  assert.match(app, /acceptance\.adoptedMarks\[buyerKey\]\s*=\s*\{[\s\S]*?signatureDataUrl:[\s\S]*?initialsDataUrl:/s);
+  assert.match(app, /function applyAdoptedMark\(buyerNumber, markType\)/);
+  assert.match(app, /if \(markType === "initials"\) applied\.initialsDataUrl = adopted\.initialsDataUrl;\s*else applied\.dataUrl = adopted\.signatureDataUrl;/s);
   assert.match(app, /function createSignedAcceptancePdf/);
   assert.match(app, /Both homeowner signatures are required/);
+  assert.match(app, /Both homeowners must confirm their initials/);
+  assert.match(app, /appliedInitials:\s*\{/);
   assert.match(css, /\.signature-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.signature-signing-area\s*\{[^}]*grid-template-columns:\s*minmax\(90px,\s*1fr\)\s+36px/s);
   assert.match(css, /\.signature-signing-area\s*\{[^}]*width:\s*100%/s);
   assert.match(css, /\.signature-line\s*\{[^}]*grid-column:\s*1/s);
   assert.match(css, /\.signature-button\s*\{[^}]*grid-column:\s*2[^}]*width:\s*36px[^}]*height:\s*36px/s);
+  assert.match(css, /\.signature-adoption-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*2fr\)\s+minmax\(190px,\s*1fr\)/s);
   assert.match(css, /touch-action:\s*none/);
   assert.match(css, /@media \(orientation: landscape\)/);
 });

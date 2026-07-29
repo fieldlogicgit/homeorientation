@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
     <link rel="stylesheet" href="tokens.css?v=1" />
-    <link rel="stylesheet" href="styles.css?v=103" />
+    <link rel="stylesheet" href="styles.css?v=104" />
   </head>
   <body>
     <div class="auth-screen" id="authScreen">
@@ -131,6 +131,20 @@
               <input id="homebuyer2EmailInput" type="email" autocomplete="email" placeholder="name@example.com" />
             </label>
           </div>
+          <section class="adopt-signature-section" aria-labelledby="adoptSignatureHeading">
+            <div>
+              <h2 id="adoptSignatureHeading">Adopt signatures and initials</h2>
+              <p class="helper">Each homeowner creates the signature and initials they will use on this acceptance.</p>
+            </div>
+            <div class="adopt-signature-actions">
+              <button class="adopt-signature-button" id="adoptBuyer1SignatureButton" type="button" data-adopt-signature-for="1">
+                Adopt signature for Homeowner 1
+              </button>
+              <button class="adopt-signature-button" id="adoptBuyer2SignatureButton" type="button" data-adopt-signature-for="2">
+                Adopt signature for Homeowner 2
+              </button>
+            </div>
+          </section>
         </section>
 
         <div class="legacy-site-selectors" aria-hidden="true">
@@ -381,15 +395,32 @@
                 <strong id="signatureBuyer1Name">Homeowner 1</strong>
                 <small id="signatureBuyer1Email"></small>
               </div>
-              <div class="signature-signing-area">
-                <button class="signature-button" type="button" data-signature-for="1" aria-label="Sign for homeowner 1" title="Sign">
-                  <svg aria-hidden="true" viewBox="0 0 24 24">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                  </svg>
-                </button>
-                <div class="signature-line">
-                  <img id="signatureBuyer1Image" alt="Homeowner 1 signature" />
+              <div class="signature-mark-control">
+                <span>Signature</span>
+                <div class="signature-signing-area">
+                  <button class="signature-button" type="button" data-apply-mark-for="1" data-mark-type="signature" aria-label="Apply signature for homeowner 1" title="Apply adopted signature">
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                    </svg>
+                  </button>
+                  <div class="signature-line">
+                    <img id="signatureBuyer1Image" alt="Homeowner 1 signature" />
+                  </div>
+                </div>
+              </div>
+              <div class="signature-mark-control initials-mark-control">
+                <span>Initials</span>
+                <div class="signature-signing-area initials-signing-area">
+                  <button class="signature-button" type="button" data-apply-mark-for="1" data-mark-type="initials" aria-label="Apply initials for homeowner 1" title="Apply adopted initials">
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                    </svg>
+                  </button>
+                  <div class="signature-line initials-line">
+                    <img id="initialsBuyer1Image" alt="Homeowner 1 initials" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -398,15 +429,32 @@
                 <strong id="signatureBuyer2Name">Homeowner 2</strong>
                 <small id="signatureBuyer2Email"></small>
               </div>
-              <div class="signature-signing-area">
-                <button class="signature-button" type="button" data-signature-for="2" aria-label="Sign for homeowner 2" title="Sign">
-                  <svg aria-hidden="true" viewBox="0 0 24 24">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                  </svg>
-                </button>
-                <div class="signature-line">
-                  <img id="signatureBuyer2Image" alt="Homeowner 2 signature" />
+              <div class="signature-mark-control">
+                <span>Signature</span>
+                <div class="signature-signing-area">
+                  <button class="signature-button" type="button" data-apply-mark-for="2" data-mark-type="signature" aria-label="Apply signature for homeowner 2" title="Apply adopted signature">
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                    </svg>
+                  </button>
+                  <div class="signature-line">
+                    <img id="signatureBuyer2Image" alt="Homeowner 2 signature" />
+                  </div>
+                </div>
+              </div>
+              <div class="signature-mark-control initials-mark-control">
+                <span>Initials</span>
+                <div class="signature-signing-area initials-signing-area">
+                  <button class="signature-button" type="button" data-apply-mark-for="2" data-mark-type="initials" aria-label="Apply initials for homeowner 2" title="Apply adopted initials">
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                    </svg>
+                  </button>
+                  <div class="signature-line initials-line">
+                    <img id="initialsBuyer2Image" alt="Homeowner 2 initials" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -709,13 +757,25 @@
           </div>
           <button class="signature-close-button" id="closeSignatureButton" type="button" aria-label="Close signature tool">&times;</button>
         </div>
-        <p class="signature-orientation-note">For more room, turn your phone or tablet to landscape.</p>
-        <div class="signature-canvas-wrap">
-          <canvas id="signatureCanvas" aria-label="Signature drawing area"></canvas>
+        <p class="signature-orientation-note">Adopt both marks below. For more room, turn your phone or tablet to landscape.</p>
+        <div class="signature-adoption-grid">
+          <label class="signature-canvas-field">
+            <span>Full signature</span>
+            <span class="signature-canvas-wrap">
+              <canvas id="signatureCanvas" aria-label="Signature drawing area"></canvas>
+            </span>
+          </label>
+          <label class="signature-canvas-field">
+            <span>Initials</span>
+            <span class="signature-canvas-wrap initials-canvas-wrap">
+              <canvas id="initialsCanvas" aria-label="Initials drawing area"></canvas>
+            </span>
+          </label>
         </div>
         <div class="signature-modal-actions">
-          <button class="mini-button" id="clearSignatureButton" type="button">Clear</button>
-          <button class="primary-button" id="acceptSignatureButton" type="button">Accept signature</button>
+          <button class="mini-button" id="clearSignatureButton" type="button">Clear signature</button>
+          <button class="mini-button" id="clearInitialsButton" type="button">Clear initials</button>
+          <button class="primary-button" id="acceptSignatureButton" type="button">Adopt signature &amp; initials</button>
         </div>
       </section>
     </div>
@@ -798,6 +858,6 @@
     <script src="settings-translations.js?v=1"></script>
     <script src="password-visibility.js?v=1"></script>
     <script src="punchlogic-pdf.js?v=2"></script>
-    <script src="app.js?v=171"></script>
+    <script src="app.js?v=172"></script>
   </body>
 </html>

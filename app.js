@@ -229,14 +229,20 @@ const signoffStatus = document.querySelector("#signoffStatus");
 const signatureBuyer1Name = document.querySelector("#signatureBuyer1Name");
 const signatureBuyer1Email = document.querySelector("#signatureBuyer1Email");
 const signatureBuyer1Image = document.querySelector("#signatureBuyer1Image");
+const initialsBuyer1Image = document.querySelector("#initialsBuyer1Image");
 const signatureBuyer2Name = document.querySelector("#signatureBuyer2Name");
 const signatureBuyer2Email = document.querySelector("#signatureBuyer2Email");
 const signatureBuyer2Image = document.querySelector("#signatureBuyer2Image");
+const initialsBuyer2Image = document.querySelector("#initialsBuyer2Image");
+const adoptBuyer1SignatureButton = document.querySelector("#adoptBuyer1SignatureButton");
+const adoptBuyer2SignatureButton = document.querySelector("#adoptBuyer2SignatureButton");
 const signatureModal = document.querySelector("#signatureModal");
 const signatureModalTitle = document.querySelector("#signatureModalTitle");
 const signatureCanvas = document.querySelector("#signatureCanvas");
+const initialsCanvas = document.querySelector("#initialsCanvas");
 const closeSignatureButton = document.querySelector("#closeSignatureButton");
 const clearSignatureButton = document.querySelector("#clearSignatureButton");
+const clearInitialsButton = document.querySelector("#clearInitialsButton");
 const acceptSignatureButton = document.querySelector("#acceptSignatureButton");
 const acceptHomeButton = document.querySelector("#acceptHomeButton");
 const archiveHomeButton = document.querySelector("#archiveHomeButton");
@@ -267,8 +273,10 @@ const allReportIssueList = document.querySelector("#allReportIssueList");
 let selectedPhotos = [];
 let editingIssueId = "";
 let activeSignatureBuyer = 0;
-let signatureDrawing = false;
+let activeSignatureLineType = "";
+let signatureDrawingCanvas = null;
 let signatureHasInk = false;
+let initialsHaveInk = false;
 let homeDetailsSyncTimer;
 let siteDocumentFilter = "";
 const siteDocumentBucket = "site-documents";
@@ -1017,19 +1025,21 @@ pageButtons.forEach((button) => button.addEventListener("click", () => handlePag
 startNewHomeButton.addEventListener("click", startNewHome);
 activeHomeList.addEventListener("click", handleActiveHomeListClick);
 archivedHomeList.addEventListener("click", handleArchivedHomeListClick);
-document.querySelectorAll("[data-signature-for]").forEach((button) => {
-  button.addEventListener("click", () => openSignatureTool(Number(button.dataset.signatureFor)));
+document.querySelectorAll("[data-adopt-signature-for]").forEach((button) => {
+  button.addEventListener("click", () => openSignatureTool(Number(button.dataset.adoptSignatureFor)));
+});
+document.querySelectorAll("[data-apply-mark-for]").forEach((button) => {
+  button.addEventListener("click", () => applyAdoptedMark(Number(button.dataset.applyMarkFor), button.dataset.markType));
 });
 closeSignatureButton.addEventListener("click", closeSignatureTool);
 clearSignatureButton.addEventListener("click", clearSignatureCanvas);
+clearInitialsButton.addEventListener("click", clearInitialsCanvas);
 acceptSignatureButton.addEventListener("click", acceptDrawnSignature);
 signatureModal.addEventListener("click", (event) => {
   if (event.target === signatureModal) closeSignatureTool();
 });
-signatureCanvas.addEventListener("pointerdown", beginSignatureStroke);
-signatureCanvas.addEventListener("pointermove", continueSignatureStroke);
-signatureCanvas.addEventListener("pointerup", endSignatureStroke);
-signatureCanvas.addEventListener("pointercancel", endSignatureStroke);
+installDrawingCanvasEvents(signatureCanvas);
+installDrawingCanvasEvents(initialsCanvas);
 window.addEventListener("resize", resizeSignatureCanvas);
 acceptHomeButton.addEventListener("click", acceptHomeAndCreatePdf);
 archiveHomeButton.addEventListener("click", archiveAcceptedHome);
@@ -1989,7 +1999,7 @@ async function hydrateSupabaseAppData() {
       selectSupabaseSiteDocuments(organizationId),
       fieldDriveSupabase
         .from("home_acceptances")
-        .select("site_id, homeowner_1_name, homeowner_1_email, homeowner_1_signature, homeowner_1_signed_at, homeowner_2_name, homeowner_2_email, homeowner_2_signature, homeowner_2_signed_at, accepted_at")
+        .select("site_id, homeowner_1_name, homeowner_1_email, homeowner_1_signature, homeowner_1_signed_at, homeowner_2_name, homeowner_2_email, homeowner_2_signature, homeowner_2_signed_at, accepted_at, document_snapshot")
         .eq("organization_id", organizationId),
       fieldDriveSupabase.from("trade_settings").select("id, name, sort_order").eq("organization_id", organizationId).order("sort_order", { ascending: true }).order("name", { ascending: true }),
       fieldDriveSupabase.from("location_settings").select("id, name, sort_order").eq("organization_id", organizationId).order("sort_order", { ascending: true }).order("name", { ascending: true }),
@@ -4878,6 +4888,10 @@ function ensureHomeAcceptanceRecord() {
       buyer1: existing.signatures?.buyer1 || null,
       buyer2: existing.signatures?.buyer2 || null
     },
+    adoptedMarks: {
+      buyer1: existing.adoptedMarks?.buyer1 || null,
+      buyer2: existing.adoptedMarks?.buyer2 || null
+    },
     acceptedAt: existing.acceptedAt || ""
   };
   return { community, homesite, acceptance: homesite.acceptance };
@@ -4928,6 +4942,17 @@ function renderHomeDetailsForm() {
   if (document.activeElement !== homebuyer1EmailInput) homebuyer1EmailInput.value = acceptance.buyer1.email || "";
   if (document.activeElement !== homebuyer2NameInput) homebuyer2NameInput.value = acceptance.buyer2.name || "";
   if (document.activeElement !== homebuyer2EmailInput) homebuyer2EmailInput.value = acceptance.buyer2.email || "";
+  renderAdoptSignatureButtons(acceptance);
+}
+
+function renderAdoptSignatureButtons(acceptance) {
+  [adoptBuyer1SignatureButton, adoptBuyer2SignatureButton].forEach((button, index) => {
+    const buyerKey = `buyer${index + 1}`;
+    const name = acceptance[buyerKey].name || `Homeowner ${index + 1}`;
+    const adopted = Boolean(acceptance.adoptedMarks[buyerKey]?.signatureDataUrl && acceptance.adoptedMarks[buyerKey]?.initialsDataUrl);
+    button.textContent = `${adopted ? "Update" : "Adopt"} signature for ${name}`;
+    button.classList.toggle("adopted", adopted);
+  });
 }
 
 function saveHomeDetailsFromForm() {
@@ -4957,8 +4982,14 @@ function saveHomeDetailsFromForm() {
     buyer1: acceptance.buyer1,
     buyer2: acceptance.buyer2
   });
-  if (previousDetails !== nextDetails && (acceptance.signatures.buyer1 || acceptance.signatures.buyer2)) {
+  if (previousDetails !== nextDetails && (
+    acceptance.signatures.buyer1 ||
+    acceptance.signatures.buyer2 ||
+    acceptance.adoptedMarks.buyer1 ||
+    acceptance.adoptedMarks.buyer2
+  )) {
     acceptance.signatures = { buyer1: null, buyer2: null };
+    acceptance.adoptedMarks = { buyer1: null, buyer2: null };
     acceptance.acceptedAt = "";
   }
 
@@ -4966,6 +4997,7 @@ function saveHomeDetailsFromForm() {
   saveState();
   renderActiveHomeList();
   renderArchivedHomeList();
+  renderAdoptSignatureButtons(acceptance);
   renderHomeownerSignoff();
   clearTimeout(homeDetailsSyncTimer);
   homeDetailsSyncTimer = setTimeout(async () => {
@@ -5234,6 +5266,8 @@ function renderHomeownerSignoff() {
   signatureBuyer2Email.textContent = acceptance.buyer2.email || "Email not entered";
   renderAcceptedSignature(signatureBuyer1Image, acceptance.signatures.buyer1);
   renderAcceptedSignature(signatureBuyer2Image, acceptance.signatures.buyer2);
+  renderAcceptedInitials(initialsBuyer1Image, acceptance.signatures.buyer1);
+  renderAcceptedInitials(initialsBuyer2Image, acceptance.signatures.buyer2);
 
   const readiness = getHomeAcceptanceReadiness();
   acceptHomeButton.disabled = !readiness.ready;
@@ -5296,6 +5330,11 @@ function renderAcceptedSignature(image, signature) {
   image.src = signature?.dataUrl || "";
 }
 
+function renderAcceptedInitials(image, signature) {
+  image.classList.toggle("signed", Boolean(signature?.initialsDataUrl));
+  image.src = signature?.initialsDataUrl || "";
+}
+
 function getHomeAcceptanceReadiness() {
   const { acceptance } = ensureHomeAcceptanceRecord();
   const missingDetails = [];
@@ -5304,8 +5343,11 @@ function getHomeAcceptanceReadiness() {
   if (!acceptance.buyer2.name) missingDetails.push("homeowner 2 name");
   if (!isValidEmail(acceptance.buyer2.email)) missingDetails.push("homeowner 2 email");
   if (missingDetails.length) return { ready: false, message: `Enter ${missingDetails.join(", ")}.` };
-  if (!acceptance.signatures.buyer1 || !acceptance.signatures.buyer2) {
+  if (!acceptance.signatures.buyer1?.dataUrl || !acceptance.signatures.buyer2?.dataUrl) {
     return { ready: false, message: "Both homeowner signatures are required." };
+  }
+  if (!acceptance.signatures.buyer1?.initialsDataUrl || !acceptance.signatures.buyer2?.initialsDataUrl) {
+    return { ready: false, message: "Both homeowners must confirm their initials." };
   }
   return { ready: true, message: "Both homeowners have signed. The home is ready for final acceptance." };
 }
@@ -5314,7 +5356,7 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 }
 
-function openSignatureTool(buyerNumber) {
+function openSignatureTool(buyerNumber, lineType = "") {
   const { acceptance } = ensureHomeAcceptanceRecord();
   const buyer = acceptance[`buyer${buyerNumber}`];
   if (!buyer?.name || !isValidEmail(buyer.email)) {
@@ -5324,31 +5366,38 @@ function openSignatureTool(buyerNumber) {
     return;
   }
   activeSignatureBuyer = buyerNumber;
-  signatureModalTitle.textContent = `${buyer.name} — sign below`;
+  activeSignatureLineType = lineType;
+  signatureModalTitle.textContent = `${buyer.name} — adopt signature and initials`;
   signatureModal.classList.remove("hidden");
   document.body.classList.add("signature-tool-open");
   requestAnimationFrame(() => {
-    clearSignatureCanvas();
+    clearAdoptionCanvases();
     resizeSignatureCanvas();
   });
 }
 
 function closeSignatureTool() {
-  clearSignatureCanvas();
+  clearAdoptionCanvases();
   signatureModal.classList.add("hidden");
   document.body.classList.remove("signature-tool-open");
   activeSignatureBuyer = 0;
-  signatureDrawing = false;
+  activeSignatureLineType = "";
+  signatureDrawingCanvas = null;
 }
 
 function resizeSignatureCanvas() {
   if (signatureModal.classList.contains("hidden")) return;
-  const previous = signatureHasInk ? signatureCanvas.toDataURL("image/png") : "";
-  const rect = signatureCanvas.getBoundingClientRect();
+  resizeDrawingCanvas(signatureCanvas, signatureHasInk);
+  resizeDrawingCanvas(initialsCanvas, initialsHaveInk);
+}
+
+function resizeDrawingCanvas(canvas, hasInk) {
+  const previous = hasInk ? canvas.toDataURL("image/png") : "";
+  const rect = canvas.getBoundingClientRect();
   const ratio = Math.max(1, window.devicePixelRatio || 1);
-  signatureCanvas.width = Math.max(1, Math.round(rect.width * ratio));
-  signatureCanvas.height = Math.max(1, Math.round(rect.height * ratio));
-  const context = signatureCanvas.getContext("2d");
+  canvas.width = Math.max(1, Math.round(rect.width * ratio));
+  canvas.height = Math.max(1, Math.round(rect.height * ratio));
+  const context = canvas.getContext("2d");
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
   context.lineCap = "round";
   context.lineJoin = "round";
@@ -5362,61 +5411,120 @@ function resizeSignatureCanvas() {
 }
 
 function clearSignatureCanvas() {
-  const context = signatureCanvas.getContext("2d");
-  context.save();
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-  context.restore();
+  clearDrawingCanvas(signatureCanvas);
   signatureHasInk = false;
 }
 
+function clearInitialsCanvas() {
+  clearDrawingCanvas(initialsCanvas);
+  initialsHaveInk = false;
+}
+
+function clearDrawingCanvas(canvas) {
+  const context = canvas.getContext("2d");
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.restore();
+}
+
+function clearAdoptionCanvases() {
+  clearSignatureCanvas();
+  clearInitialsCanvas();
+}
+
+function installDrawingCanvasEvents(canvas) {
+  canvas.addEventListener("pointerdown", beginSignatureStroke);
+  canvas.addEventListener("pointermove", continueSignatureStroke);
+  canvas.addEventListener("pointerup", endSignatureStroke);
+  canvas.addEventListener("pointercancel", endSignatureStroke);
+}
+
 function getSignaturePoint(event) {
-  const rect = signatureCanvas.getBoundingClientRect();
+  const rect = event.currentTarget.getBoundingClientRect();
   return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
 
 function beginSignatureStroke(event) {
   event.preventDefault();
-  signatureCanvas.setPointerCapture?.(event.pointerId);
-  signatureDrawing = true;
+  const canvas = event.currentTarget;
+  canvas.setPointerCapture?.(event.pointerId);
+  signatureDrawingCanvas = canvas;
   const point = getSignaturePoint(event);
-  const context = signatureCanvas.getContext("2d");
+  const context = canvas.getContext("2d");
   context.beginPath();
   context.moveTo(point.x, point.y);
 }
 
 function continueSignatureStroke(event) {
-  if (!signatureDrawing) return;
+  const canvas = event.currentTarget;
+  if (signatureDrawingCanvas !== canvas) return;
   event.preventDefault();
   const point = getSignaturePoint(event);
-  const context = signatureCanvas.getContext("2d");
+  const context = canvas.getContext("2d");
   context.lineTo(point.x, point.y);
   context.stroke();
-  signatureHasInk = true;
+  if (canvas === initialsCanvas) initialsHaveInk = true;
+  else signatureHasInk = true;
 }
 
 function endSignatureStroke(event) {
-  if (!signatureDrawing) return;
-  signatureDrawing = false;
-  signatureCanvas.releasePointerCapture?.(event.pointerId);
+  const canvas = event.currentTarget;
+  if (signatureDrawingCanvas !== canvas) return;
+  signatureDrawingCanvas = null;
+  canvas.releasePointerCapture?.(event.pointerId);
 }
 
 function acceptDrawnSignature() {
-  if (!activeSignatureBuyer || !signatureHasInk) {
-    alert("Add your signature before accepting.");
+  if (!activeSignatureBuyer || !signatureHasInk || !initialsHaveInk) {
+    alert("Add both your full signature and initials before adopting them.");
     return;
   }
   const { acceptance } = ensureHomeAcceptanceRecord();
   const buyerKey = `buyer${activeSignatureBuyer}`;
-  acceptance.signatures[buyerKey] = {
-    dataUrl: signatureCanvas.toDataURL("image/png"),
-    signedAt: new Date().toISOString(),
+  acceptance.adoptedMarks[buyerKey] = {
+    signatureDataUrl: signatureCanvas.toDataURL("image/png"),
+    initialsDataUrl: initialsCanvas.toDataURL("image/png"),
+    adoptedAt: new Date().toISOString(),
     name: acceptance[buyerKey].name,
     email: acceptance[buyerKey].email
   };
+  acceptance.signatures[buyerKey] = null;
   acceptance.acceptedAt = "";
+  const lineType = activeSignatureLineType;
+  const buyerNumber = activeSignatureBuyer;
   saveState();
   closeSignatureTool();
+  if (lineType) applyAdoptedMark(buyerNumber, lineType);
+  renderAdoptSignatureButtons(acceptance);
+  renderHomeownerSignoff();
+}
+
+function applyAdoptedMark(buyerNumber, markType) {
+  const { acceptance } = ensureHomeAcceptanceRecord();
+  const buyerKey = `buyer${buyerNumber}`;
+  const buyer = acceptance[buyerKey];
+  const adopted = acceptance.adoptedMarks[buyerKey];
+  if (!adopted?.signatureDataUrl || !adopted?.initialsDataUrl) {
+    openSignatureTool(buyerNumber, markType);
+    return;
+  }
+
+  const applied = acceptance.signatures[buyerKey] || {
+    dataUrl: "",
+    initialsDataUrl: "",
+    signedAt: "",
+    name: buyer.name,
+    email: buyer.email
+  };
+  if (markType === "initials") applied.initialsDataUrl = adopted.initialsDataUrl;
+  else applied.dataUrl = adopted.signatureDataUrl;
+  applied.name = buyer.name;
+  applied.email = buyer.email;
+  applied.signedAt = new Date().toISOString();
+  acceptance.signatures[buyerKey] = applied;
+  acceptance.acceptedAt = "";
+  saveState();
   renderHomeownerSignoff();
 }
 
@@ -5484,6 +5592,11 @@ function buildAcceptanceSnapshot() {
     community: community.name,
     address: getSiteFieldValue(homesite, "Address") || homesite.name,
     homeowners: [acceptance.buyer1, acceptance.buyer2],
+    adoptedMarks: acceptance.adoptedMarks,
+    appliedInitials: {
+      buyer1: acceptance.signatures.buyer1?.initialsDataUrl || "",
+      buyer2: acceptance.signatures.buyer2?.initialsDataUrl || ""
+    },
     items: (homesite.issues || []).map((issue) => ({
       id: issue.id,
       status: issue.completed ? "completed" : "open",
@@ -5629,6 +5742,13 @@ function addAcceptancePdfSignatures(doc, page, colors, acceptance, startY) {
     doc.setDrawColor(...colors.ink);
     doc.line(page.margin + 160, y + 43, page.width - page.margin, y + 43);
     doc.addImage(signature.dataUrl, "PNG", page.margin + 165, y, 250, 45);
+    if (signature.initialsDataUrl) {
+      doc.addImage(signature.initialsDataUrl, "PNG", page.width - page.margin - 66, y + 4, 58, 34);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...colors.muted);
+      doc.text("INITIALS", page.width - page.margin - 58, y + 41);
+    }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...colors.ink);
@@ -5648,22 +5768,31 @@ function mergeSupabaseHomeAcceptances(rows) {
       .flatMap((community) => community.homesites || [])
       .find((candidate) => candidate.id === row.site_id);
     if (!homesite) return;
+    const snapshot = row.document_snapshot && typeof row.document_snapshot === "object" ? row.document_snapshot : {};
+    const adoptedMarks = snapshot.adoptedMarks || {};
+    const appliedInitials = snapshot.appliedInitials || {};
     homesite.acceptance = {
       buyer1: { name: row.homeowner_1_name || "", email: row.homeowner_1_email || "" },
       buyer2: { name: row.homeowner_2_name || "", email: row.homeowner_2_email || "" },
       signatures: {
         buyer1: row.homeowner_1_signature ? {
           dataUrl: row.homeowner_1_signature,
+          initialsDataUrl: appliedInitials.buyer1 || adoptedMarks.buyer1?.initialsDataUrl || "",
           signedAt: row.homeowner_1_signed_at || "",
           name: row.homeowner_1_name || "",
           email: row.homeowner_1_email || ""
         } : null,
         buyer2: row.homeowner_2_signature ? {
           dataUrl: row.homeowner_2_signature,
+          initialsDataUrl: appliedInitials.buyer2 || adoptedMarks.buyer2?.initialsDataUrl || "",
           signedAt: row.homeowner_2_signed_at || "",
           name: row.homeowner_2_name || "",
           email: row.homeowner_2_email || ""
         } : null
+      },
+      adoptedMarks: {
+        buyer1: adoptedMarks.buyer1 || null,
+        buyer2: adoptedMarks.buyer2 || null
       },
       acceptedAt: row.accepted_at || ""
     };
