@@ -48,6 +48,13 @@ test("home details save into selectable records and signed homes can be archived
   assert.match(app, /filter\(\(homesite\) => !isHomeArchived\(homesite\)\)/);
 });
 
+test("photos require a selected Supabase-backed home before upload", () => {
+  assert.match(app, /async function handlePhotoSelection\(event\)[\s\S]*?homesite\.source !== "Supabase"/);
+  assert.match(app, /Select a synced home on the Select Home tab before adding photos\./);
+  assert.match(app, /selectedPhotos\.length && fieldDriveSupabase && homesite\.source !== "Supabase"/);
+  assert.match(app, /newPhotos\.length && fieldDriveSupabase && !isSupabaseIssue/);
+});
+
 test("signature tool supports touch drawing, acceptance, and signed PDF generation", () => {
   assert.match(html, /id="signatureCanvas"/);
   assert.match(html, /turn your phone or tablet to landscape/i);
@@ -58,7 +65,9 @@ test("signature tool supports touch drawing, acceptance, and signed PDF generati
   assert.match(app, /function acceptDrawnSignature/);
   assert.match(app, /function createSignedAcceptancePdf/);
   assert.match(app, /Both homeowner signatures are required/);
+  assert.match(css, /\.signature-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.signature-signing-area\s*\{[^}]*grid-template-columns:\s*minmax\(90px,\s*1fr\)\s+36px/s);
+  assert.match(css, /\.signature-signing-area\s*\{[^}]*width:\s*100%/s);
   assert.match(css, /\.signature-line\s*\{[^}]*grid-column:\s*1/s);
   assert.match(css, /\.signature-button\s*\{[^}]*grid-column:\s*2[^}]*width:\s*36px[^}]*height:\s*36px/s);
   assert.match(css, /touch-action:\s*none/);

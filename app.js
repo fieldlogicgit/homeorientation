@@ -4398,6 +4398,13 @@ async function renameHomesite() {
 
 async function handlePhotoSelection(event) {
   markLocalActivity();
+  const homesite = getCurrentHomesite();
+  if (!homesite || (fieldDriveSupabase && homesite.source !== "Supabase")) {
+    event.target.value = "";
+    alert("Select a synced home on the Select Home tab before adding photos.");
+    return;
+  }
+
   photoPreview.innerHTML = "";
 
   const files = Array.from(event.target.files || []);
@@ -4441,6 +4448,10 @@ async function addIssue() {
   const homesite = getCurrentHomesite();
   if (!homesite) {
     alert("Add or import a site before adding items.");
+    return;
+  }
+  if (selectedPhotos.length && fieldDriveSupabase && homesite.source !== "Supabase") {
+    alert("Select a synced home on the Select Home tab before adding photos.");
     return;
   }
 
@@ -7219,6 +7230,9 @@ async function saveIssueEditsFromForm() {
   try {
     let savedPhotos = [];
     const isSupabaseIssue = fieldDriveSupabase && (issue.source === "Supabase" || issue.source === "Pending" || record.homesite?.source === "Supabase");
+    if (newPhotos.length && fieldDriveSupabase && !isSupabaseIssue) {
+      throw new Error("Select a synced home on the Select Home tab before adding photos.");
+    }
     if (isSupabaseIssue) {
       const queuedPhotos = await queueEditedIssuePhotos(record, newPhotos);
       queuedOperationIds.push(...queuedPhotos.map((entry) => entry.operationId));
