@@ -32,7 +32,8 @@ test("select home leads the active-home workflow navigation", () => {
   assert.match(html, /id="homebuyer1NameInput"/);
   assert.match(html, /id="homebuyer2EmailInput"/);
   assert.match(css, /\.home-details-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
-  assert.match(css, /\.home-details-grid input\s*\{[^}]*width:\s*calc\(100% - 10px\)/s);
+  assert.match(css, /\.homeowner-details-panel\s*\{[^}]*padding:\s*clamp\(20px,\s*5vw,\s*30px\)/s);
+  assert.match(css, /\.home-details-grid input\s*\{[^}]*width:\s*100%/s);
   assert.match(css, /\.select-home-actions\s*\{[^}]*padding-inline:\s*10px/s);
   assert.match(css, /#fieldNotificationButton\s*\{[^}]*display:\s*none/s);
 });
@@ -51,13 +52,15 @@ test("signature tool supports touch drawing, acceptance, and signed PDF generati
   assert.match(html, /id="signatureCanvas"/);
   assert.match(html, /turn your phone or tablet to landscape/i);
   assert.match(html, /class="signature-signing-area"[\s\S]*?data-signature-for="1"[\s\S]*?class="signature-line"/);
+  assert.match(html, /data-signature-for="1" aria-label="Sign for homeowner 1"[\s\S]*?<svg/);
+  assert.doesNotMatch(html, />Click to sign<\/button>/);
   assert.match(app, /signatureCanvas\.addEventListener\("pointerdown"/);
   assert.match(app, /function acceptDrawnSignature/);
   assert.match(app, /function createSignedAcceptancePdf/);
   assert.match(app, /Both homeowner signatures are required/);
-  assert.match(css, /\.signature-signing-area\s*\{[^}]*grid-template-columns:\s*minmax\(90px,\s*1fr\)\s+auto/s);
+  assert.match(css, /\.signature-signing-area\s*\{[^}]*grid-template-columns:\s*minmax\(90px,\s*1fr\)\s+36px/s);
   assert.match(css, /\.signature-line\s*\{[^}]*grid-column:\s*1/s);
-  assert.match(css, /\.signature-button\s*\{[^}]*grid-column:\s*2/s);
+  assert.match(css, /\.signature-button\s*\{[^}]*grid-column:\s*2[^}]*width:\s*36px[^}]*height:\s*36px/s);
   assert.match(css, /touch-action:\s*none/);
   assert.match(css, /@media \(orientation: landscape\)/);
 });

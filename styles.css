@@ -2899,6 +2899,10 @@ body.signature-tool-open {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+.homeowner-details-panel {
+  padding: clamp(20px, 5vw, 30px);
+}
+
 .homeowner-details-panel h1,
 .home-library-panel h1,
 .signoff-document h1 {
@@ -2931,8 +2935,8 @@ body.signature-tool-open {
 }
 
 .home-details-grid input {
-  width: calc(100% - 10px);
-  justify-self: start;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .home-library-panel {
@@ -3186,9 +3190,9 @@ body.signature-tool-open {
 
 .signature-signing-area {
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) auto;
+  grid-template-columns: minmax(90px, 1fr) 36px;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .signature-line {
@@ -3216,18 +3220,27 @@ body.signature-tool-open {
 .signature-button {
   grid-column: 2;
   grid-row: 1;
-  justify-self: end;
-  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
   min-width: 0;
-  min-height: 34px;
-  padding: 6px 9px;
+  min-height: 0;
+  padding: 0;
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   background: var(--accent-soft);
   color: var(--accent-strong);
-  font-size: 0.76rem;
-  font-weight: 900;
-  white-space: nowrap;
+}
+
+.signature-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .signature-row.optional-empty {
@@ -3319,13 +3332,12 @@ body.signature-tool-open {
   }
 
   .signature-button {
-    width: auto;
-    padding: 6px 7px;
-    font-size: 0.7rem;
+    width: 34px;
+    height: 34px;
   }
 
   .signature-signing-area {
-    grid-template-columns: minmax(56px, 1fr) auto;
+    grid-template-columns: minmax(56px, 1fr) 34px;
     gap: 6px;
   }
 
