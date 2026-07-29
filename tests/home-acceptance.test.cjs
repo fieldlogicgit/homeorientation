@@ -19,6 +19,9 @@ test("select home leads the active-home workflow navigation", () => {
   const signoffTab = html.indexOf('data-page-target="homeownerSignoffPage"');
   const archiveTab = html.indexOf('data-page-target="homeArchivePage"');
   assert.ok(selectHomeTab > -1 && itemsTab > selectHomeTab && signoffTab > itemsTab && archiveTab > signoffTab);
+  const selectHomePage = html.slice(html.indexOf('id="selectHomePage"'), html.indexOf('id="punchListPage"'));
+  assert.doesNotMatch(selectHomePage, /Active homes/);
+  assert.doesNotMatch(selectHomePage, /<h1>Select home<\/h1>/);
   assert.doesNotMatch(html, /data-page-target="contactsPage"/);
   assert.doesNotMatch(html, /data-page-target="homesiteInfoPage"/);
   assert.match(html, /id="activeHomeList"/);
@@ -30,6 +33,8 @@ test("select home leads the active-home workflow navigation", () => {
   assert.match(html, /id="homebuyer2EmailInput"/);
   assert.match(css, /\.home-details-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.home-details-grid input\s*\{[^}]*width:\s*calc\(100% - 10px\)/s);
+  assert.match(css, /\.select-home-actions\s*\{[^}]*padding-inline:\s*10px/s);
+  assert.match(css, /#fieldNotificationButton\s*\{[^}]*display:\s*none/s);
 });
 
 test("home details save into selectable records and signed homes can be archived", () => {

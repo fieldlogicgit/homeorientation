@@ -2891,6 +2891,10 @@ body.signature-tool-open {
   overflow: hidden;
 }
 
+#fieldNotificationButton {
+  display: none;
+}
+
 .bottom-nav {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
@@ -2938,6 +2942,11 @@ body.signature-tool-open {
 
 .home-library-panel .panel-header {
   align-items: center;
+}
+
+.select-home-actions {
+  justify-content: flex-end;
+  padding-inline: 10px;
 }
 
 .compact-button {
