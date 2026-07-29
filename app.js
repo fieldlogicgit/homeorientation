@@ -213,6 +213,10 @@ const homebuyer1EmailInput = document.querySelector("#homebuyer1EmailInput");
 const homebuyer2NameInput = document.querySelector("#homebuyer2NameInput");
 const homebuyer2EmailInput = document.querySelector("#homebuyer2EmailInput");
 const homeDetailsSaveStatus = document.querySelector("#homeDetailsSaveStatus");
+const startNewHomeButton = document.querySelector("#startNewHomeButton");
+const activeHomeList = document.querySelector("#activeHomeList");
+const archivedHomeList = document.querySelector("#archivedHomeList");
+const archivedHomeCount = document.querySelector("#archivedHomeCount");
 const signoffCommunity = document.querySelector("#signoffCommunity");
 const signoffAddress = document.querySelector("#signoffAddress");
 const signoffBuyer1 = document.querySelector("#signoffBuyer1");
@@ -235,6 +239,7 @@ const closeSignatureButton = document.querySelector("#closeSignatureButton");
 const clearSignatureButton = document.querySelector("#clearSignatureButton");
 const acceptSignatureButton = document.querySelector("#acceptSignatureButton");
 const acceptHomeButton = document.querySelector("#acceptHomeButton");
+const archiveHomeButton = document.querySelector("#archiveHomeButton");
 const acceptanceNote = document.querySelector("#acceptanceNote");
 const contactSearch = document.querySelector("#contactSearch");
 const contactTradeFilter = document.querySelector("#contactTradeFilter");
@@ -1009,6 +1014,9 @@ signOutButton.addEventListener("click", signOutPassword);
 pageButtons.forEach((button) => button.addEventListener("click", () => handlePageButtonClick(button)));
 [homeCommunityInput, homeAddressInput, homebuyer1NameInput, homebuyer1EmailInput, homebuyer2NameInput, homebuyer2EmailInput]
   .forEach((input) => input.addEventListener("input", saveHomeDetailsFromForm));
+startNewHomeButton.addEventListener("click", startNewHome);
+activeHomeList.addEventListener("click", handleActiveHomeListClick);
+archivedHomeList.addEventListener("click", handleArchivedHomeListClick);
 document.querySelectorAll("[data-signature-for]").forEach((button) => {
   button.addEventListener("click", () => openSignatureTool(Number(button.dataset.signatureFor)));
 });
@@ -1024,6 +1032,7 @@ signatureCanvas.addEventListener("pointerup", endSignatureStroke);
 signatureCanvas.addEventListener("pointercancel", endSignatureStroke);
 window.addEventListener("resize", resizeSignatureCanvas);
 acceptHomeButton.addEventListener("click", acceptHomeAndCreatePdf);
+archiveHomeButton.addEventListener("click", archiveAcceptedHome);
 changePinButton.addEventListener("click", changePin);
 lockAppButton.addEventListener("click", lockApp);
 document.querySelector("#addCommunityButton").addEventListener("click", addCommunity);
@@ -1555,7 +1564,9 @@ function showPage(pageId) {
   appPages.forEach((page) => page.classList.toggle("active", page.id === pageId));
   pageButtons.forEach((button) => button.classList.toggle("active", button.dataset.pageTarget === pageId));
   browserReportPanel.classList.remove("open");
+  if (pageId === "selectHomePage") renderActiveHomeList();
   if (pageId === "homeownerSignoffPage") renderHomeownerSignoff();
+  if (pageId === "homeArchivePage") renderArchivedHomeList();
 }
 
 function loadState() {
@@ -1597,6 +1608,7 @@ function normalizeState(savedState) {
         home.issues ||= [];
         home.documents ||= [];
         home.fields = getSiteFields(home);
+        home.archivedAt ||= "";
         home.structuralOption ||= "";
       });
     });
@@ -1779,7 +1791,8 @@ function normalizePreloadedHomesite(communityName, home) {
     structuralOption: source.structuralOption || "",
     fields,
     issues: source.issues || [],
-    documents: source.documents || []
+    documents: source.documents || [],
+    archivedAt: source.archivedAt || ""
   };
 }
 
@@ -1836,7 +1849,38 @@ function createId() {
 }
 
 function getFirstHomeId(communities) {
-  return communities.find((community) => community.homesites.length)?.homesites[0].id || "";
+  for (const community of communities || []) {
+    const home = (community.homesites || []).find((candidate) => !isHomeArchived(candidate));
+    if (home) return home.id;
+  }
+  return "";
+}
+
+function isHomeArchived(homesite) {
+  return Boolean(homesite?.archivedAt);
+}
+
+function getHomeRecords({ archived = false, meaningfulOnly = false } = {}) {
+  return (state.communities || [])
+    .flatMap((community) => (community.homesites || []).map((homesite) => ({ community, homesite })))
+    .filter(({ homesite }) => isHomeArchived(homesite) === archived)
+    .filter(({ community, homesite }) => !meaningfulOnly || hasMeaningfulHomeDetails(community, homesite));
+}
+
+function hasMeaningfulHomeDetails(community, homesite) {
+  if (!homesite) return false;
+  const acceptance = homesite.acceptance || {};
+  const communityName = String(community?.name || "").trim();
+  const address = getSiteFieldValue(homesite, "Address") || (homesite.name === "Home" ? "" : homesite.name);
+  return Boolean(
+    (communityName && !["Community", "Project"].includes(communityName))
+    || address
+    || acceptance.buyer1?.name
+    || acceptance.buyer1?.email
+    || acceptance.buyer2?.name
+    || acceptance.buyer2?.email
+    || (homesite.issues || []).length
+  );
 }
 
 function markLocalActivity() {
@@ -2070,7 +2114,19 @@ async function ensureSupabaseProject(community, profile, organizationId = getAct
   community.id = project.id;
   community.name = project.name || projectName;
   community.source = "Supabase";
-  if (state.currentCommunityId === oldId) state.currentCommunityId = project.id;
+  const matchingCommunity = (state.communities || []).find((candidate) => candidate !== community && candidate.id === project.id);
+  if (matchingCommunity) {
+    matchingCommunity.homesites ||= [];
+    (community.homesites || []).forEach((homesite) => {
+      if (!matchingCommunity.homesites.some((candidate) => candidate === homesite || candidate.id === homesite.id)) {
+        matchingCommunity.homesites.push(homesite);
+      }
+    });
+    state.communities = state.communities.filter((candidate) => candidate !== community);
+    state.currentCommunityId = matchingCommunity.id;
+  } else if (state.currentCommunityId === oldId) {
+    state.currentCommunityId = project.id;
+  }
   return true;
 }
 
@@ -2221,7 +2277,6 @@ async function selectSupabaseSitesForApp(organizationId) {
     .from("sites")
     .select("id, name, fields, project_id, created_at, archived_at, projects(id, name, archived_at)")
     .eq("organization_id", organizationId)
-    .is("archived_at", null)
     .order("name", { ascending: true });
 
   if (!withProject.error) return withProject;
@@ -2333,6 +2388,7 @@ function mergeSupabaseProjectsAndSites(projectRows, siteRows, itemRows = [], pho
       reportId: existing?.reportId || "",
       tradeReportKeys: existing?.tradeReportKeys || {},
       reportAccess: existing?.reportAccess || {},
+      archivedAt: site.archived_at || "",
       source: "Supabase"
     });
   });
@@ -2353,8 +2409,8 @@ function mergeSupabaseProjectsAndSites(projectRows, siteRows, itemRows = [], pho
   }
 
   const currentCommunity = getCurrentCommunity();
-  if (!currentCommunity?.homesites?.some((homesite) => homesite.id === state.currentHomesiteId)) {
-    state.currentHomesiteId = currentCommunity?.homesites?.[0]?.id || getFirstHomeId(state.communities);
+  if (!currentCommunity?.homesites?.some((homesite) => homesite.id === state.currentHomesiteId && !isHomeArchived(homesite))) {
+    state.currentHomesiteId = currentCommunity?.homesites?.find((homesite) => !isHomeArchived(homesite))?.id || getFirstHomeId(state.communities);
   }
 }
 
@@ -3315,7 +3371,8 @@ function getCurrentCommunity() {
 function getCurrentHomesite() {
   const community = getCurrentCommunity();
   if (!community) return null;
-  return community.homesites.find((home) => home.id === state.currentHomesiteId) || community.homesites[0] || null;
+  const activeHomes = (community.homesites || []).filter((home) => !isHomeArchived(home));
+  return activeHomes.find((home) => home.id === state.currentHomesiteId) || activeHomes[0] || null;
 }
 
 function populateSelect(select, values) {
@@ -4032,7 +4089,8 @@ function createHomesite(name) {
     name,
     fields: [],
     issues: [],
-    documents: []
+    documents: [],
+    archivedAt: ""
   };
 }
 
@@ -4821,6 +4879,35 @@ function setHomeAcceptanceField(homesite, label, value) {
   homesite.fields = fields;
 }
 
+function moveHomeToCommunityName(currentCommunity, homesite, requestedName) {
+  const nextName = String(requestedName || "").trim() || "Community";
+  if (normalizeColumnName(currentCommunity.name) === normalizeColumnName(nextName)) {
+    currentCommunity.name = nextName;
+    return currentCommunity;
+  }
+
+  const siblingHomes = (currentCommunity.homesites || []).filter((candidate) => candidate !== homesite);
+  if (!siblingHomes.length) {
+    currentCommunity.name = nextName;
+    return currentCommunity;
+  }
+
+  let targetCommunity = (state.communities || []).find((candidate) =>
+    candidate !== currentCommunity && normalizeColumnName(candidate.name) === normalizeColumnName(nextName)
+  );
+  if (!targetCommunity) {
+    targetCommunity = { id: createId(), name: nextName, homesites: [] };
+    state.communities.push(targetCommunity);
+  }
+
+  currentCommunity.homesites = currentCommunity.homesites.filter((candidate) => candidate !== homesite);
+  targetCommunity.homesites ||= [];
+  if (!targetCommunity.homesites.includes(homesite)) targetCommunity.homesites.push(homesite);
+  state.currentCommunityId = targetCommunity.id;
+  state.currentHomesiteId = homesite.id;
+  return targetCommunity;
+}
+
 function renderHomeDetailsForm() {
   const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
   const address = getSiteFieldValue(homesite, "Address") || (homesite.name === "Home" ? "" : homesite.name);
@@ -4833,7 +4920,7 @@ function renderHomeDetailsForm() {
 }
 
 function saveHomeDetailsFromForm() {
-  const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
+  let { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
   const previousDetails = JSON.stringify({
     community: community.name,
     address: getSiteFieldValue(homesite, "Address"),
@@ -4843,7 +4930,7 @@ function saveHomeDetailsFromForm() {
 
   const communityName = homeCommunityInput.value.trim();
   const address = homeAddressInput.value.trim();
-  community.name = communityName || "Community";
+  community = moveHomeToCommunityName(community, homesite, communityName);
   homesite.name = address || "Home";
   acceptance.buyer1 = { name: homebuyer1NameInput.value.trim(), email: homebuyer1EmailInput.value.trim() };
   acceptance.buyer2 = { name: homebuyer2NameInput.value.trim(), email: homebuyer2EmailInput.value.trim() };
@@ -4866,6 +4953,8 @@ function saveHomeDetailsFromForm() {
 
   homeDetailsSaveStatus.textContent = "Saving…";
   saveState();
+  renderActiveHomeList();
+  renderArchivedHomeList();
   renderHomeownerSignoff();
   clearTimeout(homeDetailsSyncTimer);
   homeDetailsSyncTimer = setTimeout(async () => {
@@ -4901,6 +4990,216 @@ async function syncHomeDetailsToSupabase() {
     .eq("id", homesite.id)
     .eq("organization_id", organizationId);
   if (siteResult.error) throw siteResult.error;
+  saveState();
+  renderActiveHomeList();
+}
+
+function startNewHome() {
+  const reusableDraft = getHomeRecords().find(({ community, homesite }) => !hasMeaningfulHomeDetails(community, homesite));
+  if (reusableDraft) {
+    selectActiveHome(reusableDraft.community.id, reusableDraft.homesite.id);
+    homeCommunityInput.focus();
+    return;
+  }
+
+  const homesite = createHomesite("Home");
+  const community = { id: createId(), name: "Community", homesites: [homesite] };
+  state.communities.push(community);
+  state.currentCommunityId = community.id;
+  state.currentHomesiteId = homesite.id;
+  saveState();
+  render();
+  showPage("punchListPage");
+  homeCommunityInput.focus();
+}
+
+function handleActiveHomeListClick(event) {
+  const button = event.target.closest("[data-home-action='open']");
+  if (!button) return;
+  selectActiveHome(button.dataset.communityId, button.dataset.homeId);
+}
+
+function handleArchivedHomeListClick(event) {
+  const button = event.target.closest("[data-home-action='restore']");
+  if (!button) return;
+  restoreArchivedHome(button.dataset.communityId, button.dataset.homeId);
+}
+
+function findHomeRecord(communityId, homeId) {
+  const community = (state.communities || []).find((candidate) => candidate.id === communityId);
+  const homesite = (community?.homesites || []).find((candidate) => candidate.id === homeId);
+  return community && homesite ? { community, homesite } : null;
+}
+
+function selectActiveHome(communityId, homeId) {
+  const record = findHomeRecord(communityId, homeId);
+  if (!record || isHomeArchived(record.homesite)) return;
+  state.currentCommunityId = record.community.id;
+  state.currentHomesiteId = record.homesite.id;
+  saveState();
+  render();
+  showPage("punchListPage");
+}
+
+function renderActiveHomeList() {
+  const records = getHomeRecords({ meaningfulOnly: true })
+    .sort(compareHomeRecords);
+  renderHomeRecordCollection(activeHomeList, records, { archived: false });
+}
+
+function renderArchivedHomeList() {
+  const records = getHomeRecords({ archived: true })
+    .sort((a, b) => String(b.homesite.archivedAt || "").localeCompare(String(a.homesite.archivedAt || "")));
+  archivedHomeCount.textContent = records.length;
+  renderHomeRecordCollection(archivedHomeList, records, { archived: true });
+}
+
+function compareHomeRecords(a, b) {
+  const communityComparison = String(a.community.name || "").localeCompare(String(b.community.name || ""));
+  if (communityComparison) return communityComparison;
+  return getHomeAddress(a.homesite).localeCompare(getHomeAddress(b.homesite));
+}
+
+function getHomeAddress(homesite) {
+  return getSiteFieldValue(homesite, "Address") || (homesite?.name === "Home" ? "" : String(homesite?.name || ""));
+}
+
+function getHomeBuyerSummary(homesite) {
+  const acceptance = homesite.acceptance || {};
+  return [
+    acceptance.buyer1?.name || getSiteFieldValue(homesite, "Homebuyer 1 Name"),
+    acceptance.buyer2?.name || getSiteFieldValue(homesite, "Homebuyer 2 Name")
+  ].filter(Boolean).join(" & ");
+}
+
+function renderHomeRecordCollection(container, records, { archived }) {
+  container.innerHTML = "";
+  if (!records.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = archived
+      ? "No homes have been archived yet."
+      : "No active homes yet. Select Start new home, then enter the home details on the Items tab.";
+    container.append(empty);
+    return;
+  }
+
+  records.forEach(({ community, homesite }) => {
+    const card = document.createElement("article");
+    card.className = `home-record-card${archived ? " archived" : ""}`;
+
+    const main = document.createElement("div");
+    main.className = "home-record-main";
+    const title = document.createElement("h2");
+    title.textContent = getHomeAddress(homesite) || "Address being entered";
+    const communityLine = document.createElement("p");
+    communityLine.className = "home-record-community";
+    communityLine.textContent = community.name === "Community" ? "Community being entered" : community.name;
+    const buyers = document.createElement("p");
+    buyers.className = "home-record-buyers";
+    buyers.textContent = getHomeBuyerSummary(homesite) || "Homebuyer names not entered";
+    const status = document.createElement("p");
+    status.className = "home-record-status";
+    const openCount = (homesite.issues || []).filter((issue) => !issue.completed).length;
+    const completeCount = (homesite.issues || []).filter((issue) => issue.completed).length;
+    const acceptanceDate = homesite.acceptance?.acceptedAt || "";
+    status.append(
+      createHomeStatusValue(`${openCount} open`),
+      createHomeStatusValue(`${completeCount} complete`),
+      createHomeStatusValue(
+        archived
+          ? `Archived ${formatTimestamp(homesite.archivedAt)}`
+          : acceptanceDate
+            ? `Signed ${formatTimestamp(acceptanceDate)}`
+            : "In progress"
+      )
+    );
+    main.append(title, communityLine, buyers, status);
+
+    const actions = document.createElement("div");
+    actions.className = "home-record-actions";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `home-record-button${archived ? " secondary" : ""}`;
+    button.dataset.homeAction = archived ? "restore" : "open";
+    button.dataset.communityId = community.id;
+    button.dataset.homeId = homesite.id;
+    button.textContent = archived ? "Restore home" : "Open home";
+    actions.append(button);
+    card.append(main, actions);
+    container.append(card);
+  });
+}
+
+function createHomeStatusValue(text) {
+  const value = document.createElement("strong");
+  value.textContent = text;
+  return value;
+}
+
+async function archiveAcceptedHome() {
+  const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
+  if (!acceptance.acceptedAt) {
+    alert("Accept the signed home before moving it to the archive.");
+    return;
+  }
+
+  archiveHomeButton.disabled = true;
+  archiveHomeButton.textContent = "Archiving…";
+  const archivedAt = new Date().toISOString();
+  try {
+    if (fieldDriveSupabase && homesite.source !== "Supabase") await syncHomeDetailsToSupabase();
+    homesite.archivedAt = archivedAt;
+    await syncHomeArchivedStatus(homesite, archivedAt);
+    state.currentHomesiteId = getFirstHomeId(state.communities);
+    const nextRecord = getHomeRecords().find(({ homesite: candidate }) => candidate.id === state.currentHomesiteId);
+    if (nextRecord) state.currentCommunityId = nextRecord.community.id;
+    saveState();
+    render();
+    showPage("homeArchivePage");
+  } catch (error) {
+    homesite.archivedAt = "";
+    saveState();
+    alert(error.message || "The home could not be archived. Please try again.");
+  } finally {
+    archiveHomeButton.textContent = "Move to archive";
+    renderHomeownerSignoff();
+  }
+}
+
+async function restoreArchivedHome(communityId, homeId) {
+  const record = findHomeRecord(communityId, homeId);
+  if (!record || !isHomeArchived(record.homesite)) return;
+  const previousArchivedAt = record.homesite.archivedAt;
+  record.homesite.archivedAt = "";
+  try {
+    await syncHomeArchivedStatus(record.homesite, null);
+    state.currentCommunityId = record.community.id;
+    state.currentHomesiteId = record.homesite.id;
+    saveState();
+    render();
+    showPage("punchListPage");
+  } catch (error) {
+    record.homesite.archivedAt = previousArchivedAt;
+    saveState();
+    renderArchivedHomeList();
+    alert(error.message || "The home could not be restored. Please try again.");
+  }
+}
+
+async function syncHomeArchivedStatus(homesite, archivedAt) {
+  if (!fieldDriveSupabase || homesite.source !== "Supabase") return;
+  const profile = await getCurrentSupabaseProfile();
+  const organizationId = getActiveOrganizationId(profile);
+  if (!organizationId) throw new Error("This login needs an organization profile.");
+  const { data, error } = await fieldDriveSupabase
+    .from("sites")
+    .update({ archived_at: archivedAt })
+    .eq("id", homesite.id)
+    .eq("organization_id", organizationId)
+    .select("id");
+  if (error) throw error;
+  if (!data?.length) throw new Error("The home archive status was not saved.");
 }
 
 function renderHomeownerSignoff() {
@@ -4927,6 +5226,7 @@ function renderHomeownerSignoff() {
 
   const readiness = getHomeAcceptanceReadiness();
   acceptHomeButton.disabled = !readiness.ready;
+  archiveHomeButton.disabled = !acceptance.acceptedAt;
   acceptanceNote.textContent = readiness.message;
   signoffStatus.textContent = acceptance.acceptedAt
     ? `Accepted ${formatTimestamp(acceptance.acceptedAt)}`
@@ -5360,6 +5660,8 @@ function mergeSupabaseHomeAcceptances(rows) {
 
 function render() {
   ensureHomeAcceptanceRecord();
+  renderActiveHomeList();
+  renderArchivedHomeList();
   renderCommunities();
   renderHomesites();
   renderHomeDetailsForm();
@@ -6006,13 +6308,15 @@ function getAllOpenIssues() {
 
 function getAllDashboardSites() {
   return (state.communities || []).flatMap((community) =>
-    (community.homesites || []).map((homesite) => ({ community, homesite }))
+    (community.homesites || [])
+      .filter((homesite) => !isHomeArchived(homesite))
+      .map((homesite) => ({ community, homesite }))
   );
 }
 
 function getAllIssueRows(includeCompleted = false) {
   return (state.communities || []).flatMap((community) =>
-    (community.homesites || []).flatMap((homesite) =>
+    (community.homesites || []).filter((homesite) => !isHomeArchived(homesite)).flatMap((homesite) =>
       (homesite.issues || [])
         .filter((issue) => includeCompleted || !issue.completed)
         .map((issue) => ({ community, homesite, issue }))
@@ -6119,15 +6423,17 @@ function renderCommunities() {
   });
   const community = getCurrentCommunity();
   communitySelect.value = community.id;
-  communityDetails.textContent = `${community.homesites.length} sites loaded`;
+  const activeHomeCount = (community.homesites || []).filter((homesite) => !isHomeArchived(homesite)).length;
+  communityDetails.textContent = `${activeHomeCount} active homes`;
 }
 
 function renderHomesites() {
   const community = getCurrentCommunity();
+  const activeHomes = (community?.homesites || []).filter((homesite) => !isHomeArchived(homesite));
   homesiteSelect.innerHTML = "";
   homesiteDetails.innerHTML = "";
 
-  if (!community?.homesites?.length) {
+  if (!activeHomes.length) {
     const option = document.createElement("option");
     option.value = "";
     option.textContent = "No sites loaded";
@@ -6136,7 +6442,7 @@ function renderHomesites() {
     return;
   }
 
-  community.homesites.forEach((homesite) => {
+  activeHomes.forEach((homesite) => {
     const option = document.createElement("option");
     const address = getSiteFieldValue(homesite, "Address") || homesite.address || "";
     option.value = homesite.id;
@@ -6144,7 +6450,7 @@ function renderHomesites() {
     homesiteSelect.append(option);
   });
 
-  if (!getCurrentHomesite()) state.currentHomesiteId = community.homesites[0].id;
+  if (!getCurrentHomesite()) state.currentHomesiteId = activeHomes[0].id;
   homesiteSelect.value = getCurrentHomesite().id;
   renderHomesiteDetails(getCurrentHomesite());
 }

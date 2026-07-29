@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
     <link rel="stylesheet" href="tokens.css?v=1" />
-    <link rel="stylesheet" href="styles.css?v=98" />
+    <link rel="stylesheet" href="styles.css?v=99" />
   </head>
   <body>
     <div class="auth-screen" id="authScreen">
@@ -86,7 +86,21 @@
         <div id="browserReportOptions" class="popup-options"></div>
       </section>
 
-      <section class="app-page active" id="punchListPage">
+      <section class="app-page active" id="selectHomePage">
+        <section class="panel home-library-panel" aria-label="Select a home">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Active homes</p>
+              <h1>Select home</h1>
+            </div>
+            <button class="primary-button compact-button" id="startNewHomeButton" type="button">Start new home</button>
+          </div>
+          <p class="helper">Choose a saved home to continue its items and signoff, or start a new home.</p>
+          <div class="home-record-list" id="activeHomeList" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="app-page" id="punchListPage">
         <section class="panel homeowner-details-panel" aria-label="Home and homeowner details">
           <div class="panel-header">
             <div>
@@ -371,27 +385,48 @@
                 <strong id="signatureBuyer1Name">Homeowner 1</strong>
                 <small id="signatureBuyer1Email"></small>
               </div>
-              <div class="signature-line">
-                <img id="signatureBuyer1Image" alt="Homeowner 1 signature" />
+              <div class="signature-signing-area">
+                <button class="signature-button" type="button" data-signature-for="1">Click to sign</button>
+                <div class="signature-line">
+                  <img id="signatureBuyer1Image" alt="Homeowner 1 signature" />
+                </div>
               </div>
-              <button class="signature-button" type="button" data-signature-for="1">Click to sign</button>
             </div>
             <div class="signature-row" data-signature-row="2">
               <div class="signature-identity">
                 <strong id="signatureBuyer2Name">Homeowner 2</strong>
                 <small id="signatureBuyer2Email"></small>
               </div>
-              <div class="signature-line">
-                <img id="signatureBuyer2Image" alt="Homeowner 2 signature" />
+              <div class="signature-signing-area">
+                <button class="signature-button" type="button" data-signature-for="2">Click to sign</button>
+                <div class="signature-line">
+                  <img id="signatureBuyer2Image" alt="Homeowner 2 signature" />
+                </div>
               </div>
-              <button class="signature-button" type="button" data-signature-for="2">Click to sign</button>
             </div>
           </section>
 
-          <button class="primary-button accept-home-button" id="acceptHomeButton" type="button" disabled>
-            Accept home &amp; generate signed PDF
-          </button>
+          <div class="signoff-action-row">
+            <button class="primary-button accept-home-button" id="acceptHomeButton" type="button" disabled>
+              Accept home &amp; generate signed PDF
+            </button>
+            <button class="archive-home-button" id="archiveHomeButton" type="button" disabled>Move to archive</button>
+          </div>
           <p class="acceptance-note" id="acceptanceNote" aria-live="polite">Homeowner signatures are required before acceptance.</p>
+        </section>
+      </section>
+
+      <section class="app-page" id="homeArchivePage">
+        <section class="panel home-library-panel" aria-label="Archived homes">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Completed homes</p>
+              <h1>Archive</h1>
+            </div>
+            <span class="count-pill" id="archivedHomeCount">0</span>
+          </div>
+          <p class="helper">Signed-off homes are kept here with their items and acceptance details.</p>
+          <div class="home-record-list" id="archivedHomeList" aria-live="polite"></div>
         </section>
       </section>
 
@@ -680,7 +715,15 @@
     </div>
 
     <nav class="bottom-nav" aria-label="App navigation">
-      <button class="bottom-tab active" data-page-target="punchListPage" type="button">
+      <button class="bottom-tab active" data-page-target="selectHomePage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m3 11 9-8 9 8"></path>
+          <path d="M5 10v10h14V10"></path>
+          <path d="M9 20v-6h6v6"></path>
+        </svg>
+        <span>Select Home</span>
+      </button>
+      <button class="bottom-tab" data-page-target="punchListPage" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8 6h13"></path>
           <path d="M8 12h13"></path>
@@ -697,6 +740,14 @@
           <path d="M14 7l3 3"></path>
         </svg>
         <span>Signoff</span>
+      </button>
+      <button class="bottom-tab" data-page-target="homeArchivePage" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16v13H4z"></path>
+          <path d="M3 3h18v4H3z"></path>
+          <path d="M9 11h6"></path>
+        </svg>
+        <span>Archive</span>
       </button>
       <button class="bottom-tab" data-page-target="allReportsPage" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -741,6 +792,6 @@
     <script src="settings-translations.js?v=1"></script>
     <script src="password-visibility.js?v=1"></script>
     <script src="punchlogic-pdf.js?v=2"></script>
-    <script src="app.js?v=168"></script>
+    <script src="app.js?v=169"></script>
   </body>
 </html>

@@ -2892,10 +2892,11 @@ body.signature-tool-open {
 }
 
 .bottom-nav {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .homeowner-details-panel h1,
+.home-library-panel h1,
 .signoff-document h1 {
   margin: 2px 0 0;
   font-size: clamp(1.45rem, 5vw, 2rem);
@@ -2926,7 +2927,119 @@ body.signature-tool-open {
 }
 
 .home-details-grid input {
-  width: 100%;
+  width: calc(100% - 10px);
+  justify-self: start;
+}
+
+.home-library-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.home-library-panel .panel-header {
+  align-items: center;
+}
+
+.compact-button {
+  width: auto;
+  min-width: 138px;
+}
+
+.home-record-list {
+  display: grid;
+  gap: 12px;
+}
+
+.home-record-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.home-record-card.archived {
+  border-left-color: var(--success);
+}
+
+.home-record-main {
+  min-width: 0;
+}
+
+.home-record-main h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.home-record-community,
+.home-record-buyers,
+.home-record-status {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.home-record-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.home-record-status strong {
+  color: var(--ink);
+}
+
+.home-record-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 112px;
+}
+
+.home-record-button,
+.archive-home-button {
+  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 850;
+}
+
+.home-record-button.secondary,
+.archive-home-button {
+  background: transparent;
+  color: var(--accent);
+}
+
+.home-record-button:disabled,
+.archive-home-button:disabled {
+  cursor: not-allowed;
+  border-color: var(--line);
+  background: var(--panel-soft);
+  color: var(--muted);
+  opacity: 0.72;
+}
+
+.signoff-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.signoff-action-row .accept-home-button {
+  margin: 0;
+}
+
+.archive-home-button {
+  min-width: 150px;
 }
 
 .signoff-document {
@@ -3047,8 +3160,8 @@ body.signature-tool-open {
 
 .signature-row {
   display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) minmax(180px, 1.2fr) auto;
-  align-items: end;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(220px, 1.2fr);
+  align-items: center;
   gap: 16px;
   margin-top: 24px;
 }
@@ -3062,8 +3175,15 @@ body.signature-tool-open {
   color: var(--muted);
 }
 
+.signature-signing-area {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
 .signature-line {
   position: relative;
+  width: 100%;
   min-height: 64px;
   border-bottom: 2px solid currentColor;
 }
@@ -3082,6 +3202,9 @@ body.signature-tool-open {
 }
 
 .signature-button {
+  justify-self: center;
+  align-self: center;
+  min-width: 132px;
   min-height: 44px;
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
@@ -3178,6 +3301,23 @@ body.signature-tool-open {
   }
 
   .signature-button {
+    width: min(220px, 100%);
+  }
+
+  .home-record-card {
+    grid-template-columns: 1fr;
+  }
+
+  .home-record-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .signoff-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-home-button,
+  .compact-button {
     width: 100%;
   }
 
@@ -3212,6 +3352,7 @@ body.signature-tool-open {
   .app-page:not(#homeownerSignoffPage),
   .signature-button,
   .accept-home-button,
+  .archive-home-button,
   .acceptance-note {
     display: none !important;
   }

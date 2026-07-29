@@ -13,22 +13,39 @@ const migration = fs.readFileSync(
   "utf8"
 );
 
-test("home details and signoff lead the simplified navigation", () => {
+test("select home leads the active-home workflow navigation", () => {
+  const selectHomeTab = html.indexOf('data-page-target="selectHomePage"');
   const itemsTab = html.indexOf('data-page-target="punchListPage"');
   const signoffTab = html.indexOf('data-page-target="homeownerSignoffPage"');
-  assert.ok(itemsTab > -1 && signoffTab > itemsTab);
+  const archiveTab = html.indexOf('data-page-target="homeArchivePage"');
+  assert.ok(selectHomeTab > -1 && itemsTab > selectHomeTab && signoffTab > itemsTab && archiveTab > signoffTab);
   assert.doesNotMatch(html, /data-page-target="contactsPage"/);
   assert.doesNotMatch(html, /data-page-target="homesiteInfoPage"/);
+  assert.match(html, /id="activeHomeList"/);
+  assert.match(html, /id="startNewHomeButton"/);
+  assert.match(html, /id="archivedHomeList"/);
   assert.match(html, /id="homeCommunityInput"/);
   assert.match(html, /id="homeAddressInput"/);
   assert.match(html, /id="homebuyer1NameInput"/);
   assert.match(html, /id="homebuyer2EmailInput"/);
   assert.match(css, /\.home-details-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.home-details-grid input\s*\{[^}]*width:\s*calc\(100% - 10px\)/s);
+});
+
+test("home details save into selectable records and signed homes can be archived", () => {
+  assert.match(app, /function startNewHome\(\)/);
+  assert.match(app, /function renderActiveHomeList\(\)/);
+  assert.match(app, /renderActiveHomeList\(\);\s*renderArchivedHomeList\(\);\s*renderHomeownerSignoff\(\);/s);
+  assert.match(app, /async function archiveAcceptedHome\(\)/);
+  assert.match(app, /\.update\(\{ archived_at: archivedAt \}\)/);
+  assert.match(app, /function restoreArchivedHome\(/);
+  assert.match(app, /filter\(\(homesite\) => !isHomeArchived\(homesite\)\)/);
 });
 
 test("signature tool supports touch drawing, acceptance, and signed PDF generation", () => {
   assert.match(html, /id="signatureCanvas"/);
   assert.match(html, /turn your phone or tablet to landscape/i);
+  assert.match(html, /class="signature-signing-area"[\s\S]*?data-signature-for="1"[\s\S]*?class="signature-line"/);
   assert.match(app, /signatureCanvas\.addEventListener\("pointerdown"/);
   assert.match(app, /function acceptDrawnSignature/);
   assert.match(app, /function createSignedAcceptancePdf/);
