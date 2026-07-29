@@ -5328,12 +5328,13 @@ function openSignatureTool(buyerNumber) {
   signatureModal.classList.remove("hidden");
   document.body.classList.add("signature-tool-open");
   requestAnimationFrame(() => {
-    resizeSignatureCanvas();
     clearSignatureCanvas();
+    resizeSignatureCanvas();
   });
 }
 
 function closeSignatureTool() {
+  clearSignatureCanvas();
   signatureModal.classList.add("hidden");
   document.body.classList.remove("signature-tool-open");
   activeSignatureBuyer = 0;

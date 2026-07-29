@@ -63,6 +63,8 @@ test("signature tool supports touch drawing, acceptance, and signed PDF generati
   assert.doesNotMatch(html, />Click to sign<\/button>/);
   assert.match(app, /signatureCanvas\.addEventListener\("pointerdown"/);
   assert.match(app, /function acceptDrawnSignature/);
+  assert.match(app, /requestAnimationFrame\(\(\) => \{\s*clearSignatureCanvas\(\);\s*resizeSignatureCanvas\(\);/s);
+  assert.match(app, /function closeSignatureTool\(\)\s*\{\s*clearSignatureCanvas\(\);/s);
   assert.match(app, /function createSignedAcceptancePdf/);
   assert.match(app, /Both homeowner signatures are required/);
   assert.match(css, /\.signature-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
