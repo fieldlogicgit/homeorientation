@@ -3177,14 +3177,17 @@ body.signature-tool-open {
 
 .signature-signing-area {
   display: grid;
-  justify-items: center;
-  gap: 8px;
+  grid-template-columns: minmax(90px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
 }
 
 .signature-line {
   position: relative;
+  grid-column: 1;
+  grid-row: 1;
   width: 100%;
-  min-height: 64px;
+  min-height: 48px;
   border-bottom: 2px solid currentColor;
 }
 
@@ -3202,15 +3205,20 @@ body.signature-tool-open {
 }
 
 .signature-button {
-  justify-self: center;
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
   align-self: center;
-  min-width: 132px;
-  min-height: 44px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 9px;
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   background: var(--accent-soft);
   color: var(--accent-strong);
+  font-size: 0.76rem;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .signature-row.optional-empty {
@@ -3296,12 +3304,29 @@ body.signature-tool-open {
   }
 
   .signature-row {
-    grid-template-columns: 1fr;
-    align-items: stretch;
+    grid-template-columns: minmax(105px, 0.85fr) minmax(0, 1.15fr);
+    align-items: center;
+    gap: 10px;
   }
 
   .signature-button {
-    width: min(220px, 100%);
+    width: auto;
+    padding: 6px 7px;
+    font-size: 0.7rem;
+  }
+
+  .signature-signing-area {
+    grid-template-columns: minmax(56px, 1fr) auto;
+    gap: 6px;
+  }
+
+  .signature-identity {
+    min-width: 0;
+  }
+
+  .signature-identity strong,
+  .signature-identity small {
+    overflow-wrap: anywhere;
   }
 
   .home-record-card {
