@@ -117,6 +117,13 @@ assert.match(photoFunction, /signedInUserCanReadItem/, "Signed-in photo reads mu
 assert.doesNotMatch(photoFunction, /max-age=31536000/, "Private photos must not remain cached for a year");
 assert.match(photoFunction, /Cache-Control": "private, no-store"/, "Private photo proxy responses must not be cached");
 
+const acceptanceDraftFunction = read("netlify/functions/home-acceptance-drafts.js");
+assert.match(acceptanceDraftFunction, /getRequestContext/, "Signing drafts must require a valid login");
+assert.match(acceptanceDraftFunction, /signedInUserCanAccessSite/, "Signing drafts must respect signed-in site access");
+assert.match(acceptanceDraftFunction, /Authorization: `Bearer \$\{context\.token\}`/, "Signing draft site checks must use user RLS");
+assert.match(acceptanceDraftFunction, /createServerStateStore\(namespace, organizationId\)/, "Signing drafts must remain scoped to the login organization");
+assert.match(acceptanceDraftFunction, /2 \* 1024 \* 1024/, "Signing drafts must enforce a request size limit");
+
 const uploadSecurity = read("upload-security.js");
 assert.match(uploadSecurity, /validateDocument/);
 assert.match(uploadSecurity, /validateSourcePhoto/);

@@ -8,6 +8,10 @@ const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 const config = fs.readFileSync(path.join(root, "supabase-config.js"), "utf8");
+const acceptanceDraftFunction = fs.readFileSync(
+  path.join(root, "netlify", "functions", "home-acceptance-drafts.js"),
+  "utf8"
+);
 const migration = fs.readFileSync(
   path.join(root, "supabase", "migrations", "035_home_acceptance_signatures.sql"),
   "utf8"
@@ -16,9 +20,10 @@ const migration = fs.readFileSync(
 test("select home leads the active-home workflow navigation", () => {
   const selectHomeTab = html.indexOf('data-page-target="selectHomePage"');
   const itemsTab = html.indexOf('data-page-target="punchListPage"');
+  const nhoTab = html.indexOf('data-page-target="nhoSignoffPage"');
   const signoffTab = html.indexOf('data-page-target="homeownerSignoffPage"');
   const archiveTab = html.indexOf('data-page-target="homeArchivePage"');
-  assert.ok(selectHomeTab > -1 && itemsTab > selectHomeTab && signoffTab > itemsTab && archiveTab > signoffTab);
+  assert.ok(selectHomeTab > -1 && itemsTab > selectHomeTab && nhoTab > itemsTab && signoffTab > nhoTab && archiveTab > signoffTab);
   const selectHomePage = html.slice(html.indexOf('id="selectHomePage"'), html.indexOf('id="punchListPage"'));
   assert.doesNotMatch(selectHomePage, /Active homes/);
   assert.doesNotMatch(selectHomePage, /<h1>Select home<\/h1>/);
@@ -32,7 +37,9 @@ test("select home leads the active-home workflow navigation", () => {
   assert.match(html, /id="homebuyer1NameInput"/);
   assert.match(html, /id="homebuyer2EmailInput"/);
   assert.match(html, /data-page-target="homeownerSignoffPage"[\s\S]*?<path d="M12 20h9"><\/path>[\s\S]*?<span>Final Signoff<\/span>/);
+  assert.match(html, /data-page-target="nhoSignoffPage"[\s\S]*?class="nho-tab-icon"[^>]*>NHO<\/span>[\s\S]*?<span>NHO Signoff<\/span>/);
   assert.match(html, /<h1>Final Signoff<\/h1>/);
+  assert.match(css, /\.bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(css, /\.home-details-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.homeowner-details-panel\s*\{[^}]*padding:\s*clamp\(20px,\s*5vw,\s*30px\)/s);
   assert.match(css, /\.home-details-grid input\s*\{[^}]*width:\s*100%/s);
@@ -58,7 +65,7 @@ test("photos require a selected Supabase-backed home before upload", () => {
 });
 
 test("signature tool supports touch drawing, acceptance, and signed PDF generation", () => {
-  const itemsPage = html.slice(html.indexOf('id="punchListPage"'), html.indexOf('id="homeownerSignoffPage"'));
+  const itemsPage = html.slice(html.indexOf('id="punchListPage"'), html.indexOf('id="nhoSignoffPage"'));
   const signoffPage = html.slice(html.indexOf('id="homeownerSignoffPage"'), html.indexOf('id="homeArchivePage"'));
   assert.match(html, /id="signatureCanvas"/);
   assert.match(html, /id="initialsCanvas"/);
@@ -74,15 +81,20 @@ test("signature tool supports touch drawing, acceptance, and signed PDF generati
   assert.match(app, /requestAnimationFrame\(\(\) => \{\s*clearAdoptionCanvases\(\);\s*resizeSignatureCanvas\(\);/s);
   assert.match(app, /function closeSignatureTool\(\)\s*\{\s*clearAdoptionCanvases\(\);/s);
   assert.match(app, /acceptance\.adoptedMarks\[buyerKey\]\s*=\s*\{[\s\S]*?signatureDataUrl:[\s\S]*?initialsDataUrl:/s);
-  assert.match(app, /function applyAdoptedMark\(buyerNumber, markType, termId = ""\)/);
+  assert.match(app, /async function applyAdoptedMark\(buyerNumber, markType, termId = "", documentType = "final"\)/);
   assert.match(app, /if \(markType === "initials" && termId\)[\s\S]*?acceptance\.termInitials\[termId\]\[buyerKey\]/s);
-  assert.match(app, /const buyerAcceptanceTerms = \[[\s\S]*?Completion of Prior Orientation Items[\s\S]*?Irrigation Timer/s);
+  assert.match(app, /const buyerAcceptanceTerms = \[[\s\S]*?Completion of Prior New Home Orientation Items[\s\S]*?No additional, written, verbal, or implied warranties[\s\S]*?local municipal-specified watering times/s);
   assert.match(app, /function renderBuyerAcceptanceTerms\(acceptance\)/);
   assert.match(app, /function createSignedAcceptancePdf/);
   assert.match(app, /function addAcceptancePdfTerms\(/);
   assert.match(app, /Both homeowner signatures are required/);
   assert.match(app, /Both homeowners must initial every buyer acknowledgment/);
   assert.match(app, /termInitials:\s*acceptance\.termInitials/);
+  assert.match(html, />Exceptions <span id="signoffOpenCount"/);
+  assert.match(app, /"EXCEPTIONS", open/);
+  assert.match(app, /function trimCanvasToInkDataUrl\(canvas, padding = 12\)[\s\S]*?left[\s\S]*?right[\s\S]*?top[\s\S]*?bottom/s);
+  assert.match(app, /signatureDataUrl:\s*trimCanvasToInkDataUrl\(signatureCanvas\)[\s\S]*?initialsDataUrl:\s*trimCanvasToInkDataUrl\(initialsCanvas\)/s);
+  assert.match(css, /\.signature-line img\s*\{[^}]*object-position:\s*left bottom/s);
   assert.match(css, /\.signature-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.signature-signing-area\s*\{[^}]*grid-template-columns:\s*minmax\(90px,\s*1fr\)\s+36px/s);
   assert.match(css, /\.signature-signing-area\s*\{[^}]*width:\s*100%/s);
@@ -92,6 +104,34 @@ test("signature tool supports touch drawing, acceptance, and signed PDF generati
   assert.match(css, /\.term-initials-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(css, /touch-action:\s*none/);
   assert.match(css, /@media \(orientation: landscape\)/);
+});
+
+test("NHO signoff lists all entered items and keeps its signatures separate", () => {
+  const nhoPage = html.slice(html.indexOf('id="nhoSignoffPage"'), html.indexOf('id="homeownerSignoffPage"'));
+  assert.match(nhoPage, /id="nhoAddress"/);
+  assert.match(nhoPage, /id="nhoBuyer1"/);
+  assert.match(nhoPage, /Adopt signatures and initials/);
+  assert.match(nhoPage, /id="nhoItemList"/);
+  assert.match(nhoPage, /data-signature-document="nho"/);
+  assert.match(nhoPage, /id="acceptNhoButton"/);
+  assert.match(app, /function renderNhoSignoff\(\)/);
+  assert.match(app, /acceptance\.nhoSignatures\[buyerKey\]/);
+  assert.match(app, /async function acceptNhoAndCreatePdf\(\)/);
+  assert.match(app, /async function createNhoSignoffPdf\(\)/);
+  assert.match(app, /"NEW HOME ORIENTATION SIGNOFF"/);
+  assert.match(app, /"ORIENTATION ITEMS"/);
+  assert.match(app, /nhoSignatures:\s*acceptance\.nhoSignatures/);
+});
+
+test("adopted marks and signoff confirmations persist through secure server drafts", () => {
+  assert.match(app, /async function saveAcceptanceDraftToServer\(\)/);
+  assert.match(app, /\/\.netlify\/functions\/home-acceptance-drafts/);
+  assert.match(app, /mergeAcceptanceDrafts\(await loadAcceptanceDraftsFromServer\(\)\)/);
+  assert.match(app, /await saveAcceptanceDraftToServer\(\);/);
+  assert.match(acceptanceDraftFunction, /getRequestContext/);
+  assert.match(acceptanceDraftFunction, /signedInUserCanAccessSite/);
+  assert.match(acceptanceDraftFunction, /createServerStateStore\(namespace, organizationId\)/);
+  assert.match(acceptanceDraftFunction, /Buffer\.byteLength\(event\.body/);
 });
 
 test("new app is isolated from the existing app and database", () => {

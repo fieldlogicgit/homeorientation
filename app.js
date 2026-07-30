@@ -58,13 +58,13 @@ const genericTradeDeficiencies = [
 const buyerAcceptanceTerms = [
   {
     id: "orientation-items",
-    title: "Completion of Prior Orientation Items",
+    title: "Completion of Prior New Home Orientation Items",
     body: "All items and punch-list discrepancies noted during the initial home orientation walkthrough have been completed satisfactorily by the Builder, unless explicitly noted otherwise in the exceptions section of this document below."
   },
   {
     id: "builder-warranty",
     title: "Builder Warranty Acceptance",
-    body: "The Buyer has been provided with, has received, and fully understands the official builder warranty. No additional, verbal, or implied warranties have been offered, promised, or guaranteed by any builder employee, sales agent, or representative."
+    body: "The Buyer has been provided with, has received, and fully understands the official builder warranty. No additional, written, verbal, or implied warranties have been offered, promised, or guaranteed by any builder employee, sales agent, or representative."
   },
   {
     id: "cosmetic-items",
@@ -84,7 +84,7 @@ const buyerAcceptanceTerms = [
   {
     id: "irrigation-timer",
     title: "Irrigation Timer",
-    body: "The Buyer understands they must set the lawn irrigation system timer to comply with county-specified watering times. Failure to do so may result in unexpected, larger water bills, which remain the sole responsibility of the Buyer."
+    body: "The Buyer understands they must set the lawn irrigation system timer to comply with local municipal-specified watering times. Failure to do so may result in unexpected, larger water bills, which remain the sole responsibility of the Buyer."
   }
 ];
 
@@ -279,6 +279,21 @@ const acceptSignatureButton = document.querySelector("#acceptSignatureButton");
 const acceptHomeButton = document.querySelector("#acceptHomeButton");
 const archiveHomeButton = document.querySelector("#archiveHomeButton");
 const acceptanceNote = document.querySelector("#acceptanceNote");
+const nhoCommunity = document.querySelector("#nhoCommunity");
+const nhoAddress = document.querySelector("#nhoAddress");
+const nhoBuyer1 = document.querySelector("#nhoBuyer1");
+const nhoBuyer2 = document.querySelector("#nhoBuyer2");
+const nhoItemCount = document.querySelector("#nhoItemCount");
+const nhoItemList = document.querySelector("#nhoItemList");
+const nhoSignoffStatus = document.querySelector("#nhoSignoffStatus");
+const nhoSignatureBuyer1Name = document.querySelector("#nhoSignatureBuyer1Name");
+const nhoSignatureBuyer1Email = document.querySelector("#nhoSignatureBuyer1Email");
+const nhoSignatureBuyer1Image = document.querySelector("#nhoSignatureBuyer1Image");
+const nhoSignatureBuyer2Name = document.querySelector("#nhoSignatureBuyer2Name");
+const nhoSignatureBuyer2Email = document.querySelector("#nhoSignatureBuyer2Email");
+const nhoSignatureBuyer2Image = document.querySelector("#nhoSignatureBuyer2Image");
+const acceptNhoButton = document.querySelector("#acceptNhoButton");
+const nhoAcceptanceNote = document.querySelector("#nhoAcceptanceNote");
 const contactSearch = document.querySelector("#contactSearch");
 const contactTradeFilter = document.querySelector("#contactTradeFilter");
 const contactList = document.querySelector("#contactList");
@@ -307,6 +322,7 @@ let editingIssueId = "";
 let activeSignatureBuyer = 0;
 let activeSignatureLineType = "";
 let activeSignatureTermId = "";
+let activeSignatureDocument = "final";
 let signatureDrawingCanvas = null;
 let signatureHasInk = false;
 let initialsHaveInk = false;
@@ -1062,7 +1078,12 @@ document.querySelectorAll("[data-adopt-signature-for]").forEach((button) => {
   button.addEventListener("click", () => openSignatureTool(Number(button.dataset.adoptSignatureFor)));
 });
 document.querySelectorAll("[data-apply-mark-for]").forEach((button) => {
-  button.addEventListener("click", () => applyAdoptedMark(Number(button.dataset.applyMarkFor), button.dataset.markType));
+  button.addEventListener("click", () => applyAdoptedMark(
+    Number(button.dataset.applyMarkFor),
+    button.dataset.markType,
+    "",
+    button.dataset.signatureDocument || "final"
+  ));
 });
 buyerTermsList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-term-initial-for]");
@@ -1080,6 +1101,7 @@ installDrawingCanvasEvents(signatureCanvas);
 installDrawingCanvasEvents(initialsCanvas);
 window.addEventListener("resize", resizeSignatureCanvas);
 acceptHomeButton.addEventListener("click", acceptHomeAndCreatePdf);
+acceptNhoButton.addEventListener("click", acceptNhoAndCreatePdf);
 archiveHomeButton.addEventListener("click", archiveAcceptedHome);
 changePinButton.addEventListener("click", changePin);
 lockAppButton.addEventListener("click", lockApp);
@@ -1613,6 +1635,7 @@ function showPage(pageId) {
   pageButtons.forEach((button) => button.classList.toggle("active", button.dataset.pageTarget === pageId));
   browserReportPanel.classList.remove("open");
   if (pageId === "selectHomePage") renderActiveHomeList();
+  if (pageId === "nhoSignoffPage") renderNhoSignoff();
   if (pageId === "homeownerSignoffPage") renderHomeownerSignoff();
   if (pageId === "homeArchivePage") renderArchivedHomeList();
 }
@@ -2090,6 +2113,7 @@ async function hydrateSupabaseAppData() {
     isHydratingFromCloud = true;
     mergeSupabaseProjectsAndSites(projects || [], activeSites, activeItems, activePhotos, activeDocuments);
     if (!homeAcceptanceError) mergeSupabaseHomeAcceptances(homeAcceptances || []);
+    mergeAcceptanceDrafts(await loadAcceptanceDraftsFromServer());
     await restorePendingMainOperations();
     mergeSupabaseContacts(contacts || []);
     mergeSupabaseSettings(sharedSettings.tradeRows, sharedSettings.locationRows, sharedSettings.itemRows);
@@ -4931,6 +4955,11 @@ function ensureHomeAcceptanceRecord() {
       buyer2: existing.adoptedMarks?.buyer2 || null
     },
     termInitials: existing.termInitials || {},
+    nhoSignatures: {
+      buyer1: existing.nhoSignatures?.buyer1 || null,
+      buyer2: existing.nhoSignatures?.buyer2 || null
+    },
+    nhoAcceptedAt: existing.nhoAcceptedAt || "",
     acceptedAt: existing.acceptedAt || ""
   };
   return { community, homesite, acceptance: homesite.acceptance };
@@ -4985,9 +5014,10 @@ function renderHomeDetailsForm() {
 }
 
 function renderAdoptSignatureButtons(acceptance) {
-  [adoptBuyer1SignatureButton, adoptBuyer2SignatureButton].forEach((button, index) => {
-    const buyerKey = `buyer${index + 1}`;
-    const name = acceptance[buyerKey].name || `Homeowner ${index + 1}`;
+  document.querySelectorAll("[data-adopt-signature-for]").forEach((button) => {
+    const buyerNumber = Number(button.dataset.adoptSignatureFor);
+    const buyerKey = `buyer${buyerNumber}`;
+    const name = acceptance[buyerKey].name || `Homeowner ${buyerNumber}`;
     const adopted = Boolean(acceptance.adoptedMarks[buyerKey]?.signatureDataUrl && acceptance.adoptedMarks[buyerKey]?.initialsDataUrl);
     button.textContent = `${adopted ? "Update" : "Adopt"} signature for ${name}`;
     button.classList.toggle("adopted", adopted);
@@ -5073,11 +5103,15 @@ function saveHomeDetailsFromForm() {
     acceptance.signatures.buyer2 ||
     acceptance.adoptedMarks.buyer1 ||
     acceptance.adoptedMarks.buyer2 ||
+    acceptance.nhoSignatures.buyer1 ||
+    acceptance.nhoSignatures.buyer2 ||
     Object.keys(acceptance.termInitials).length
   )) {
     acceptance.signatures = { buyer1: null, buyer2: null };
     acceptance.adoptedMarks = { buyer1: null, buyer2: null };
     acceptance.termInitials = {};
+    acceptance.nhoSignatures = { buyer1: null, buyer2: null };
+    acceptance.nhoAcceptedAt = "";
     acceptance.acceptedAt = "";
   }
 
@@ -5091,6 +5125,7 @@ function saveHomeDetailsFromForm() {
   homeDetailsSyncTimer = setTimeout(async () => {
     try {
       await syncHomeDetailsToSupabase();
+      await saveAcceptanceDraftToServer();
       homeDetailsSaveStatus.textContent = "Saved";
     } catch (error) {
       homeDetailsSaveStatus.textContent = navigator.onLine === false ? "Saved offline" : "Needs sync";
@@ -5333,6 +5368,51 @@ async function syncHomeArchivedStatus(homesite, archivedAt) {
   if (!data?.length) throw new Error("The home archive status was not saved.");
 }
 
+function renderNhoSignoff() {
+  const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
+  const address = getSiteFieldValue(homesite, "Address") || (homesite.name === "Home" ? "" : homesite.name);
+  const issues = homesite.issues || [];
+
+  nhoCommunity.textContent = community.name === "Community" ? "—" : community.name;
+  nhoAddress.textContent = address || "—";
+  nhoBuyer1.textContent = acceptance.buyer1.name || "—";
+  nhoBuyer2.textContent = acceptance.buyer2.name || "—";
+  nhoItemCount.textContent = issues.length;
+  renderSignoffItemList(nhoItemList, issues, false, { allItems: true });
+
+  nhoSignatureBuyer1Name.textContent = acceptance.buyer1.name || "Homeowner 1";
+  nhoSignatureBuyer1Email.textContent = acceptance.buyer1.email || "Email not entered";
+  nhoSignatureBuyer2Name.textContent = acceptance.buyer2.name || "Homeowner 2";
+  nhoSignatureBuyer2Email.textContent = acceptance.buyer2.email || "Email not entered";
+  renderAcceptedSignature(nhoSignatureBuyer1Image, acceptance.nhoSignatures.buyer1);
+  renderAcceptedSignature(nhoSignatureBuyer2Image, acceptance.nhoSignatures.buyer2);
+  renderAdoptSignatureButtons(acceptance);
+
+  const readiness = getNhoSignoffReadiness();
+  acceptNhoButton.disabled = !readiness.ready;
+  nhoAcceptanceNote.textContent = readiness.message;
+  nhoSignoffStatus.textContent = acceptance.nhoAcceptedAt
+    ? `Signed ${formatTimestamp(acceptance.nhoAcceptedAt)}`
+    : readiness.ready
+      ? "Ready to complete"
+      : "Awaiting signatures";
+}
+
+function getNhoSignoffReadiness() {
+  const { homesite, acceptance } = ensureHomeAcceptanceRecord();
+  const missingDetails = [];
+  if (!acceptance.buyer1.name) missingDetails.push("homeowner 1 name");
+  if (!isValidEmail(acceptance.buyer1.email)) missingDetails.push("homeowner 1 email");
+  if (!acceptance.buyer2.name) missingDetails.push("homeowner 2 name");
+  if (!isValidEmail(acceptance.buyer2.email)) missingDetails.push("homeowner 2 email");
+  if (missingDetails.length) return { ready: false, message: `Enter ${missingDetails.join(", ")}.` };
+  if (!(homesite.issues || []).length) return { ready: false, message: "Add at least one orientation item before signing." };
+  if (!acceptance.nhoSignatures.buyer1?.dataUrl || !acceptance.nhoSignatures.buyer2?.dataUrl) {
+    return { ready: false, message: "Both homeowner signatures are required." };
+  }
+  return { ready: true, message: "Both homeowners have signed the new home orientation." };
+}
+
 function renderHomeownerSignoff() {
   const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
   const address = getSiteFieldValue(homesite, "Address") || (homesite.name === "Home" ? "" : homesite.name);
@@ -5368,19 +5448,20 @@ function renderHomeownerSignoff() {
       : "Awaiting signatures";
 }
 
-function renderSignoffItemList(container, issues, completed) {
+function renderSignoffItemList(container, issues, completed, options = {}) {
   container.innerHTML = "";
   if (!issues.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = completed ? "No completed items yet." : "No open items.";
+    empty.textContent = options.allItems ? "No orientation items entered yet." : completed ? "No completed items yet." : "No exceptions.";
     container.append(empty);
     return;
   }
 
   issues.forEach((issue, index) => {
+    const isComplete = options.allItems ? Boolean(issue.completed) : completed;
     const card = document.createElement("article");
-    card.className = `signoff-item${completed ? " complete" : ""}`;
+    card.className = `signoff-item${isComplete ? " complete" : ""}`;
     const number = document.createElement("span");
     number.className = "signoff-item-number";
     number.textContent = String(index + 1);
@@ -5393,7 +5474,7 @@ function renderSignoffItemList(container, issues, completed) {
       getIssueLocation(issue) || "Location not entered",
       issue.trade ? `Crew: ${issue.trade}` : "",
       `Added: ${formatDateAdded(issue.createdAt)}`,
-      completed && issue.completedAt ? `Completed: ${formatDateAdded(issue.completedAt)}` : ""
+      isComplete && issue.completedAt ? `Completed: ${formatDateAdded(issue.completedAt)}` : ""
     ].filter(Boolean).join(" • ");
     const notes = document.createElement("p");
     notes.className = "signoff-item-notes";
@@ -5404,7 +5485,7 @@ function renderSignoffItemList(container, issues, completed) {
     (issue.photos || []).forEach((photo, photoIndex) => {
       const image = document.createElement("img");
       image.src = getPhotoSource(photo);
-      image.alt = `${completed ? "Completed" : "Open"} item photo ${photoIndex + 1}`;
+      image.alt = `${isComplete ? "Completed" : options.allItems ? "Orientation" : "Exception"} item photo ${photoIndex + 1}`;
       photos.append(image);
     });
     if (photos.childElementCount) main.append(photos);
@@ -5443,7 +5524,7 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 }
 
-function openSignatureTool(buyerNumber, lineType = "", termId = "") {
+function openSignatureTool(buyerNumber, lineType = "", termId = "", documentType = "final") {
   const { acceptance } = ensureHomeAcceptanceRecord();
   const buyer = acceptance[`buyer${buyerNumber}`];
   if (!buyer?.name || !isValidEmail(buyer.email)) {
@@ -5455,6 +5536,7 @@ function openSignatureTool(buyerNumber, lineType = "", termId = "") {
   activeSignatureBuyer = buyerNumber;
   activeSignatureLineType = lineType;
   activeSignatureTermId = termId;
+  activeSignatureDocument = documentType;
   signatureModalTitle.textContent = `${buyer.name} — adopt signature and initials`;
   signatureModal.classList.remove("hidden");
   document.body.classList.add("signature-tool-open");
@@ -5471,6 +5553,7 @@ function closeSignatureTool() {
   activeSignatureBuyer = 0;
   activeSignatureLineType = "";
   activeSignatureTermId = "";
+  activeSignatureDocument = "final";
   signatureDrawingCanvas = null;
 }
 
@@ -5522,6 +5605,54 @@ function clearAdoptionCanvases() {
   clearInitialsCanvas();
 }
 
+function trimCanvasToInkDataUrl(canvas, padding = 12) {
+  const context = canvas.getContext("2d");
+  const { width, height } = canvas;
+  const pixels = context.getImageData(0, 0, width, height).data;
+  let left = width;
+  let right = -1;
+  let top = height;
+  let bottom = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (pixels[(y * width + x) * 4 + 3] < 8) continue;
+      if (x < left) left = x;
+      if (x > right) right = x;
+      if (y < top) top = y;
+      if (y > bottom) bottom = y;
+    }
+  }
+
+  if (right < left || bottom < top) return canvas.toDataURL("image/png");
+  left = Math.max(0, left - padding);
+  right = Math.min(width - 1, right + padding);
+  top = Math.max(0, top - padding);
+  bottom = Math.min(height - 1, bottom + padding);
+  const croppedWidth = right - left + 1;
+  const croppedHeight = bottom - top + 1;
+  const cropped = document.createElement("canvas");
+  cropped.width = croppedWidth;
+  cropped.height = croppedHeight;
+  cropped.getContext("2d").drawImage(canvas, left, top, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
+  return cropped.toDataURL("image/png");
+}
+
+function trimDataUrlToInkDataUrl(dataUrl) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth || image.width;
+      canvas.height = image.naturalHeight || image.height;
+      canvas.getContext("2d").drawImage(image, 0, 0);
+      resolve(trimCanvasToInkDataUrl(canvas));
+    };
+    image.onerror = () => resolve(dataUrl);
+    image.src = dataUrl;
+  });
+}
+
 function installDrawingCanvasEvents(canvas) {
   canvas.addEventListener("pointerdown", beginSignatureStroke);
   canvas.addEventListener("pointermove", continueSignatureStroke);
@@ -5564,7 +5695,7 @@ function endSignatureStroke(event) {
   canvas.releasePointerCapture?.(event.pointerId);
 }
 
-function acceptDrawnSignature() {
+async function acceptDrawnSignature() {
   if (!activeSignatureBuyer || !signatureHasInk || !initialsHaveInk) {
     alert("Add both your full signature and initials before adopting them.");
     return;
@@ -5572,35 +5703,52 @@ function acceptDrawnSignature() {
   const { acceptance } = ensureHomeAcceptanceRecord();
   const buyerKey = `buyer${activeSignatureBuyer}`;
   acceptance.adoptedMarks[buyerKey] = {
-    signatureDataUrl: signatureCanvas.toDataURL("image/png"),
-    initialsDataUrl: initialsCanvas.toDataURL("image/png"),
+    signatureDataUrl: trimCanvasToInkDataUrl(signatureCanvas),
+    initialsDataUrl: trimCanvasToInkDataUrl(initialsCanvas),
+    croppedToInk: true,
     adoptedAt: new Date().toISOString(),
     name: acceptance[buyerKey].name,
     email: acceptance[buyerKey].email
   };
   acceptance.signatures[buyerKey] = null;
+  acceptance.nhoSignatures[buyerKey] = null;
   buyerAcceptanceTerms.forEach((term) => {
     if (acceptance.termInitials[term.id]) acceptance.termInitials[term.id][buyerKey] = null;
   });
   acceptance.acceptedAt = "";
+  acceptance.nhoAcceptedAt = "";
   const lineType = activeSignatureLineType;
   const termId = activeSignatureTermId;
+  const documentType = activeSignatureDocument;
   const buyerNumber = activeSignatureBuyer;
   saveState();
+  try {
+    await saveAcceptanceDraftToServer();
+  } catch (error) {
+    alert(`${error.message || "The adopted marks could not be synced."} They remain saved on this device.`);
+  }
   closeSignatureTool();
-  if (lineType) applyAdoptedMark(buyerNumber, lineType, termId);
+  if (lineType) applyAdoptedMark(buyerNumber, lineType, termId, documentType);
   renderAdoptSignatureButtons(acceptance);
+  renderNhoSignoff();
   renderHomeownerSignoff();
 }
 
-function applyAdoptedMark(buyerNumber, markType, termId = "") {
+async function applyAdoptedMark(buyerNumber, markType, termId = "", documentType = "final") {
   const { acceptance } = ensureHomeAcceptanceRecord();
   const buyerKey = `buyer${buyerNumber}`;
   const buyer = acceptance[buyerKey];
   const adopted = acceptance.adoptedMarks[buyerKey];
   if (!adopted?.signatureDataUrl || !adopted?.initialsDataUrl) {
-    openSignatureTool(buyerNumber, markType, termId);
+    openSignatureTool(buyerNumber, markType, termId, documentType);
     return;
+  }
+  if (!adopted.croppedToInk) {
+    [adopted.signatureDataUrl, adopted.initialsDataUrl] = await Promise.all([
+      trimDataUrlToInkDataUrl(adopted.signatureDataUrl),
+      trimDataUrlToInkDataUrl(adopted.initialsDataUrl)
+    ]);
+    adopted.croppedToInk = true;
   }
 
   if (markType === "initials" && termId) {
@@ -5611,6 +5759,14 @@ function applyAdoptedMark(buyerNumber, markType, termId = "") {
       name: buyer.name,
       email: buyer.email
     };
+  } else if (documentType === "nho") {
+    acceptance.nhoSignatures[buyerKey] = {
+      dataUrl: adopted.signatureDataUrl,
+      signedAt: new Date().toISOString(),
+      name: buyer.name,
+      email: buyer.email
+    };
+    acceptance.nhoAcceptedAt = "";
   } else {
     acceptance.signatures[buyerKey] = {
       dataUrl: adopted.signatureDataUrl,
@@ -5621,7 +5777,38 @@ function applyAdoptedMark(buyerNumber, markType, termId = "") {
   }
   acceptance.acceptedAt = "";
   saveState();
+  renderNhoSignoff();
   renderHomeownerSignoff();
+  try {
+    await saveAcceptanceDraftToServer();
+  } catch (error) {
+    alert(`${error.message || "The confirmed mark could not be synced."} It remains saved on this device.`);
+  }
+}
+
+async function acceptNhoAndCreatePdf() {
+  const readiness = getNhoSignoffReadiness();
+  if (!readiness.ready) {
+    alert(readiness.message);
+    return;
+  }
+  const { acceptance } = ensureHomeAcceptanceRecord();
+  acceptNhoButton.disabled = true;
+  acceptNhoButton.textContent = "Creating NHO PDF…";
+  acceptance.nhoAcceptedAt = new Date().toISOString();
+  saveState();
+  try {
+    await saveAcceptanceDraftToServer();
+    await createNhoSignoffPdf();
+    nhoAcceptanceNote.textContent = `NHO signoff completed ${formatTimestamp(acceptance.nhoAcceptedAt)}.`;
+  } catch (error) {
+    acceptance.nhoAcceptedAt = "";
+    saveState();
+    alert(error.message || "The NHO signoff PDF could not be created.");
+  } finally {
+    acceptNhoButton.textContent = "Complete NHO signoff & generate PDF";
+    renderNhoSignoff();
+  }
 }
 
 async function acceptHomeAndCreatePdf() {
@@ -5639,6 +5826,7 @@ async function acceptHomeAndCreatePdf() {
   try {
     await syncHomeDetailsToSupabase();
     await syncHomeAcceptanceToSupabase();
+    await saveAcceptanceDraftToServer();
   } catch (error) {
     syncWarning = " The signed record is saved on this device and will need to be synced.";
     console.warn("Signed acceptance could not be synced yet.", error);
@@ -5682,6 +5870,68 @@ async function syncHomeAcceptanceToSupabase() {
   if (error) throw error;
 }
 
+function buildAcceptanceDraft(acceptance) {
+  return {
+    adoptedMarks: acceptance.adoptedMarks,
+    termInitials: acceptance.termInitials,
+    signatures: acceptance.signatures,
+    nhoSignatures: acceptance.nhoSignatures,
+    nhoAcceptedAt: acceptance.nhoAcceptedAt,
+    acceptedAt: acceptance.acceptedAt,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+async function saveAcceptanceDraftToServer() {
+  if (!fieldDriveSupabase || navigator.onLine === false) return false;
+  const { homesite, acceptance } = ensureHomeAcceptanceRecord();
+  if (homesite.source !== "Supabase") await syncHomeDetailsToSupabase();
+  if (homesite.source !== "Supabase") throw new Error("The home must finish syncing before signatures can be saved.");
+  const response = await fetch("/.netlify/functions/home-acceptance-drafts", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { ...(await getFunctionHeaders()), "Content-Type": "application/json" },
+    body: JSON.stringify({ siteId: homesite.id, draft: buildAcceptanceDraft(acceptance) })
+  });
+  let result = {};
+  try { result = await response.json(); } catch { /* Use the fallback error below. */ }
+  if (!response.ok) throw new Error(result.error || "The signing draft could not be saved.");
+  return true;
+}
+
+async function loadAcceptanceDraftsFromServer() {
+  if (!fieldDriveSupabase || navigator.onLine === false) return {};
+  const response = await fetch("/.netlify/functions/home-acceptance-drafts", {
+    credentials: "same-origin",
+    headers: await getFunctionHeaders()
+  });
+  if (!response.ok) return {};
+  const result = await response.json();
+  return result.drafts && typeof result.drafts === "object" ? result.drafts : {};
+}
+
+function mergeAcceptanceDrafts(drafts) {
+  (state.communities || []).forEach((community) => {
+    (community.homesites || []).forEach((homesite) => {
+      const draft = drafts?.[homesite.id];
+      if (!draft || typeof draft !== "object") return;
+      const existing = homesite.acceptance || {};
+      const finalAlreadyAccepted = Boolean(existing.acceptedAt);
+      homesite.acceptance = {
+        ...existing,
+        adoptedMarks: draft.adoptedMarks || existing.adoptedMarks || { buyer1: null, buyer2: null },
+        termInitials: draft.termInitials || existing.termInitials || {},
+        signatures: finalAlreadyAccepted
+          ? existing.signatures
+          : draft.signatures || existing.signatures || { buyer1: null, buyer2: null },
+        nhoSignatures: draft.nhoSignatures || existing.nhoSignatures || { buyer1: null, buyer2: null },
+        nhoAcceptedAt: draft.nhoAcceptedAt || existing.nhoAcceptedAt || "",
+        acceptedAt: existing.acceptedAt || draft.acceptedAt || ""
+      };
+    });
+  });
+}
+
 function buildAcceptanceSnapshot() {
   const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
   return {
@@ -5690,6 +5940,8 @@ function buildAcceptanceSnapshot() {
     homeowners: [acceptance.buyer1, acceptance.buyer2],
     adoptedMarks: acceptance.adoptedMarks,
     termInitials: acceptance.termInitials,
+    nhoSignatures: acceptance.nhoSignatures,
+    nhoAcceptedAt: acceptance.nhoAcceptedAt,
     items: (homesite.issues || []).map((issue) => ({
       id: issue.id,
       status: issue.completed ? "completed" : "open",
@@ -5713,12 +5965,12 @@ async function createSignedAcceptancePdf() {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const page = { width: 612, height: 792, margin: 42 };
   const colors = { ink: [25, 34, 42], muted: [96, 108, 118], line: [216, 223, 228], orange: [239, 102, 40], green: [25, 135, 82] };
-  let y = addAcceptancePdfHeader(doc, page, colors, community.name, address, acceptance);
+  let y = addAcceptancePdfHeader(doc, page, colors, community.name, address, acceptance, "FINAL SIGNOFF");
   const completed = (homesite.issues || []).filter((issue) => issue.completed);
   const open = (homesite.issues || []).filter((issue) => !issue.completed);
   y = addAcceptancePdfTerms(doc, page, colors, acceptance, y);
   y = await addAcceptancePdfSection(doc, page, colors, "COMPLETED ITEMS", completed, y, true);
-  y = await addAcceptancePdfSection(doc, page, colors, "OPEN ITEMS", open, y, false);
+  y = await addAcceptancePdfSection(doc, page, colors, "EXCEPTIONS", open, y, false);
   if (y > page.height - 205) {
     doc.addPage();
     y = page.margin;
@@ -5733,12 +5985,37 @@ async function createSignedAcceptancePdf() {
   await shareOrDownloadPdf(doc, `${fileBase || "home"}-signed-acceptance.pdf`, `${address} signed home acceptance`, true);
 }
 
-function addAcceptancePdfHeader(doc, page, colors, community, address, acceptance) {
+async function createNhoSignoffPdf() {
+  if (!window.jspdf?.jsPDF) throw new Error("The PDF tool is still loading. Try again in a moment.");
+  const { jsPDF } = window.jspdf;
+  const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
+  const address = getSiteFieldValue(homesite, "Address") || homesite.name;
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const page = { width: 612, height: 792, margin: 42 };
+  const colors = { ink: [25, 34, 42], muted: [96, 108, 118], line: [216, 223, 228], orange: [239, 102, 40], green: [25, 135, 82] };
+  const nhoAcceptance = { ...acceptance, signatures: acceptance.nhoSignatures };
+  let y = addAcceptancePdfHeader(doc, page, colors, community.name, address, nhoAcceptance, "NEW HOME ORIENTATION SIGNOFF");
+  y = await addAcceptancePdfSection(doc, page, colors, "ORIENTATION ITEMS", homesite.issues || [], y, false);
+  if (y > page.height - 205) {
+    doc.addPage();
+    y = page.margin;
+  }
+  y = addAcceptancePdfSignatures(doc, page, colors, nhoAcceptance, y + 18);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...colors.muted);
+  doc.text(`Signed ${formatTimestamp(acceptance.nhoAcceptedAt)}`, page.margin, Math.min(page.height - 30, y + 28));
+  addPdfPageNumbers(doc, page, colors);
+  const fileBase = (address || "home").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+  await shareOrDownloadPdf(doc, `${fileBase || "home"}-nho-signoff.pdf`, `${address} new home orientation signoff`, true);
+}
+
+function addAcceptancePdfHeader(doc, page, colors, community, address, acceptance, title = "FINAL SIGNOFF") {
   let y = page.margin;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(...colors.ink);
-  doc.text("HOMEOWNER SIGNOFF", page.margin, y);
+  doc.text(title, page.margin, y);
   doc.setDrawColor(...colors.orange);
   doc.setLineWidth(2);
   doc.line(page.margin, y + 10, page.width - page.margin, y + 10);
@@ -5922,6 +6199,7 @@ function mergeSupabaseHomeAcceptances(rows) {
     const snapshot = row.document_snapshot && typeof row.document_snapshot === "object" ? row.document_snapshot : {};
     const adoptedMarks = snapshot.adoptedMarks || {};
     const termInitials = snapshot.termInitials || {};
+    const nhoSignatures = snapshot.nhoSignatures || {};
     homesite.acceptance = {
       buyer1: { name: row.homeowner_1_name || "", email: row.homeowner_1_email || "" },
       buyer2: { name: row.homeowner_2_name || "", email: row.homeowner_2_email || "" },
@@ -5944,6 +6222,11 @@ function mergeSupabaseHomeAcceptances(rows) {
         buyer2: adoptedMarks.buyer2 || null
       },
       termInitials,
+      nhoSignatures: {
+        buyer1: nhoSignatures.buyer1 || null,
+        buyer2: nhoSignatures.buyer2 || null
+      },
+      nhoAcceptedAt: snapshot.nhoAcceptedAt || "",
       acceptedAt: row.accepted_at || ""
     };
   });
@@ -5957,6 +6240,7 @@ function render() {
   renderHomesites();
   renderHomeDetailsForm();
   renderIssues();
+  renderNhoSignoff();
   renderHomeownerSignoff();
   renderEmailActions();
   populateHomesiteInfoFilters();

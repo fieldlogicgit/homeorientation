@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
     <link rel="stylesheet" href="tokens.css?v=1" />
-    <link rel="stylesheet" href="styles.css?v=105" />
+    <link rel="stylesheet" href="styles.css?v=106" />
   </head>
   <body>
     <div class="auth-screen" id="authScreen">
@@ -342,6 +342,89 @@
         </section>
       </section>
 
+      <section class="app-page" id="nhoSignoffPage">
+        <section class="signoff-document" aria-label="New home orientation signoff document">
+          <header class="signoff-header">
+            <div>
+              <p class="eyebrow">New home orientation</p>
+              <h1>NHO Signoff</h1>
+            </div>
+            <span class="signoff-status" id="nhoSignoffStatus">Awaiting signatures</span>
+          </header>
+
+          <dl class="signoff-home-summary">
+            <div><dt>Community</dt><dd id="nhoCommunity">—</dd></div>
+            <div><dt>Address</dt><dd id="nhoAddress">—</dd></div>
+            <div><dt>Homeowner 1</dt><dd id="nhoBuyer1">—</dd></div>
+            <div><dt>Homeowner 2</dt><dd id="nhoBuyer2">—</dd></div>
+          </dl>
+
+          <section class="adopt-signature-section" aria-labelledby="nhoAdoptSignatureHeading">
+            <div>
+              <h2 id="nhoAdoptSignatureHeading">Adopt signatures and initials</h2>
+              <p class="helper">Each homeowner creates the signature and initials they will use for this home.</p>
+            </div>
+            <div class="adopt-signature-actions">
+              <button class="adopt-signature-button" type="button" data-adopt-signature-for="1">Adopt signature for Homeowner 1</button>
+              <button class="adopt-signature-button" type="button" data-adopt-signature-for="2">Adopt signature for Homeowner 2</button>
+            </div>
+          </section>
+
+          <section class="signoff-items-section">
+            <div class="section-title">
+              <h2>Orientation items <span id="nhoItemCount" class="count-pill">0</span></h2>
+            </div>
+            <div id="nhoItemList" class="signoff-item-list"></div>
+          </section>
+
+          <section class="signature-section">
+            <h2>New home orientation signoff</h2>
+            <p class="helper">Each homeowner taps the pen to apply their adopted signature and confirm the orientation items above.</p>
+            <div class="signature-row">
+              <div class="signature-identity">
+                <strong id="nhoSignatureBuyer1Name">Homeowner 1</strong>
+                <small id="nhoSignatureBuyer1Email"></small>
+              </div>
+              <div class="signature-mark-control">
+                <span>Signature</span>
+                <div class="signature-signing-area">
+                  <button class="signature-button" type="button" data-apply-mark-for="1" data-mark-type="signature" data-signature-document="nho" aria-label="Apply NHO signature for homeowner 1" title="Apply adopted signature">
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                    </svg>
+                  </button>
+                  <div class="signature-line"><img id="nhoSignatureBuyer1Image" alt="Homeowner 1 NHO signature" /></div>
+                </div>
+              </div>
+            </div>
+            <div class="signature-row">
+              <div class="signature-identity">
+                <strong id="nhoSignatureBuyer2Name">Homeowner 2</strong>
+                <small id="nhoSignatureBuyer2Email"></small>
+              </div>
+              <div class="signature-mark-control">
+                <span>Signature</span>
+                <div class="signature-signing-area">
+                  <button class="signature-button" type="button" data-apply-mark-for="2" data-mark-type="signature" data-signature-document="nho" aria-label="Apply NHO signature for homeowner 2" title="Apply adopted signature">
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                    </svg>
+                  </button>
+                  <div class="signature-line"><img id="nhoSignatureBuyer2Image" alt="Homeowner 2 NHO signature" /></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <button class="primary-button accept-home-button" id="acceptNhoButton" type="button" disabled>
+            Complete NHO signoff &amp; generate PDF
+          </button>
+          <p class="acceptance-note" id="nhoAcceptanceNote" aria-live="polite">Both homeowner signatures are required.</p>
+        </section>
+      </section>
+
       <section class="app-page" id="homeownerSignoffPage">
         <section class="signoff-document" aria-label="Homeowner signoff document">
           <header class="signoff-header">
@@ -391,7 +474,7 @@
 
           <section class="signoff-items-section">
             <div class="section-title">
-              <h2>Open items <span id="signoffOpenCount" class="count-pill">0</span></h2>
+              <h2>Exceptions <span id="signoffOpenCount" class="count-pill">0</span></h2>
             </div>
             <div id="signoffOpenItems" class="signoff-item-list"></div>
           </section>
@@ -781,6 +864,10 @@
         </svg>
         <span>Items</span>
       </button>
+      <button class="bottom-tab" data-page-target="nhoSignoffPage" type="button">
+        <span class="nho-tab-icon" aria-hidden="true">NHO</span>
+        <span>NHO Signoff</span>
+      </button>
       <button class="bottom-tab" data-page-target="homeownerSignoffPage" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 20h9"></path>
@@ -839,6 +926,6 @@
     <script src="settings-translations.js?v=1"></script>
     <script src="password-visibility.js?v=1"></script>
     <script src="punchlogic-pdf.js?v=2"></script>
-    <script src="app.js?v=173"></script>
+    <script src="app.js?v=174"></script>
   </body>
 </html>
