@@ -2976,6 +2976,73 @@ body.signature-tool-open {
   content: "✓ ";
 }
 
+.buyer-terms-section {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.buyer-terms-section > h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.buyer-terms-intro {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.buyer-terms-list {
+  display: grid;
+  gap: 14px;
+}
+
+.buyer-term-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--panel-soft);
+}
+
+.buyer-term-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.buyer-term-card > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.term-initials-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.term-initial-entry {
+  display: grid;
+  gap: 5px;
+}
+
+.term-initial-entry > strong {
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+}
+
+.term-initial-line {
+  min-height: 40px;
+}
+
+.term-initial-line img {
+  width: min(120px, 100%);
+  height: 54px;
+}
+
 .home-library-panel {
   display: grid;
   gap: 16px;
@@ -3410,7 +3477,8 @@ body.signature-tool-open {
   }
 
   .adopt-signature-actions,
-  .signature-adoption-grid {
+  .signature-adoption-grid,
+  .term-initials-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3486,6 +3554,7 @@ body.signature-tool-open {
   .bottom-nav,
   .app-page:not(#homeownerSignoffPage),
   .signature-button,
+  .adopt-signature-section,
   .accept-home-button,
   .archive-home-button,
   .acceptance-note {

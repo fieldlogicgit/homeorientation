@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
     <link rel="stylesheet" href="tokens.css?v=1" />
-    <link rel="stylesheet" href="styles.css?v=104" />
+    <link rel="stylesheet" href="styles.css?v=105" />
   </head>
   <body>
     <div class="auth-screen" id="authScreen">
@@ -131,20 +131,6 @@
               <input id="homebuyer2EmailInput" type="email" autocomplete="email" placeholder="name@example.com" />
             </label>
           </div>
-          <section class="adopt-signature-section" aria-labelledby="adoptSignatureHeading">
-            <div>
-              <h2 id="adoptSignatureHeading">Adopt signatures and initials</h2>
-              <p class="helper">Each homeowner creates the signature and initials they will use on this acceptance.</p>
-            </div>
-            <div class="adopt-signature-actions">
-              <button class="adopt-signature-button" id="adoptBuyer1SignatureButton" type="button" data-adopt-signature-for="1">
-                Adopt signature for Homeowner 1
-              </button>
-              <button class="adopt-signature-button" id="adoptBuyer2SignatureButton" type="button" data-adopt-signature-for="2">
-                Adopt signature for Homeowner 2
-              </button>
-            </div>
-          </section>
         </section>
 
         <div class="legacy-site-selectors" aria-hidden="true">
@@ -361,7 +347,7 @@
           <header class="signoff-header">
             <div>
               <p class="eyebrow">Final walkthrough</p>
-              <h1>Homeowner Signoff</h1>
+              <h1>Final Signoff</h1>
             </div>
             <span class="signoff-status" id="signoffStatus">Awaiting signatures</span>
           </header>
@@ -372,6 +358,29 @@
             <div><dt>Homeowner 1</dt><dd id="signoffBuyer1">—</dd></div>
             <div><dt>Homeowner 2</dt><dd id="signoffBuyer2">—</dd></div>
           </dl>
+
+          <section class="adopt-signature-section" aria-labelledby="adoptSignatureHeading">
+            <div>
+              <h2 id="adoptSignatureHeading">Adopt signatures and initials</h2>
+              <p class="helper">Each homeowner creates the signature and initials they will use on this acceptance.</p>
+            </div>
+            <div class="adopt-signature-actions">
+              <button class="adopt-signature-button" id="adoptBuyer1SignatureButton" type="button" data-adopt-signature-for="1">
+                Adopt signature for Homeowner 1
+              </button>
+              <button class="adopt-signature-button" id="adoptBuyer2SignatureButton" type="button" data-adopt-signature-for="2">
+                Adopt signature for Homeowner 2
+              </button>
+            </div>
+          </section>
+
+          <section class="buyer-terms-section" aria-labelledby="buyerTermsHeading">
+            <h2 id="buyerTermsHeading">Buyer acknowledgments</h2>
+            <p class="buyer-terms-intro">
+              By initialing each item below, the Buyer acknowledges, understands, and agrees to the following terms and conditions regarding the final acceptance of the property.
+            </p>
+            <div class="buyer-terms-list" id="buyerTermsList"></div>
+          </section>
 
           <section class="signoff-items-section">
             <div class="section-title">
@@ -409,20 +418,6 @@
                   </div>
                 </div>
               </div>
-              <div class="signature-mark-control initials-mark-control">
-                <span>Initials</span>
-                <div class="signature-signing-area initials-signing-area">
-                  <button class="signature-button" type="button" data-apply-mark-for="1" data-mark-type="initials" aria-label="Apply initials for homeowner 1" title="Apply adopted initials">
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
-                      <path d="M12 20h9"></path>
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                    </svg>
-                  </button>
-                  <div class="signature-line initials-line">
-                    <img id="initialsBuyer1Image" alt="Homeowner 1 initials" />
-                  </div>
-                </div>
-              </div>
             </div>
             <div class="signature-row" data-signature-row="2">
               <div class="signature-identity">
@@ -440,20 +435,6 @@
                   </button>
                   <div class="signature-line">
                     <img id="signatureBuyer2Image" alt="Homeowner 2 signature" />
-                  </div>
-                </div>
-              </div>
-              <div class="signature-mark-control initials-mark-control">
-                <span>Initials</span>
-                <div class="signature-signing-area initials-signing-area">
-                  <button class="signature-button" type="button" data-apply-mark-for="2" data-mark-type="initials" aria-label="Apply initials for homeowner 2" title="Apply adopted initials">
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
-                      <path d="M12 20h9"></path>
-                      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                    </svg>
-                  </button>
-                  <div class="signature-line initials-line">
-                    <img id="initialsBuyer2Image" alt="Homeowner 2 initials" />
                   </div>
                 </div>
               </div>
@@ -802,10 +783,10 @@
       </button>
       <button class="bottom-tab" data-page-target="homeownerSignoffPage" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 20c4-1 6-4 8-8l3-6 3 3-6 3c-4 2-7 4-8 8Z"></path>
-          <path d="M14 7l3 3"></path>
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
         </svg>
-        <span>Signoff</span>
+        <span>Final Signoff</span>
       </button>
       <button class="bottom-tab" data-page-target="homeArchivePage" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -858,6 +839,6 @@
     <script src="settings-translations.js?v=1"></script>
     <script src="password-visibility.js?v=1"></script>
     <script src="punchlogic-pdf.js?v=2"></script>
-    <script src="app.js?v=172"></script>
+    <script src="app.js?v=173"></script>
   </body>
 </html>
