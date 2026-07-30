@@ -36,10 +36,12 @@ test("select home leads the active-home workflow navigation", () => {
   assert.match(html, /id="homeAddressInput"/);
   assert.match(html, /id="homebuyer1NameInput"/);
   assert.match(html, /id="homebuyer2EmailInput"/);
-  assert.match(html, /data-page-target="homeownerSignoffPage"[\s\S]*?<path d="M12 20h9"><\/path>[\s\S]*?<span>Final Signoff<\/span>/);
-  assert.match(html, /data-page-target="nhoSignoffPage"[\s\S]*?class="nho-tab-icon"[^>]*>NHO<\/span>[\s\S]*?<span>NHO Signoff<\/span>/);
+  assert.match(html, /data-page-target="homeownerSignoffPage"[\s\S]*?<path d="M12 20h9"><\/path>[\s\S]*?<span class="stacked-tab-label">Final<br \/>Signoff<\/span>/);
+  assert.match(html, /data-page-target="nhoSignoffPage"[\s\S]*?class="nho-tab-icon"[^>]*>NHO<\/span>[\s\S]*?<span class="stacked-tab-label">NHO<br \/>Signoff<\/span>/);
   assert.match(html, /<h1>Final Signoff<\/h1>/);
   assert.match(css, /\.bottom-nav\s*\{[^}]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(css, /\.bottom-tab\s*\{[^}]*grid-template-rows:\s*22px 20px[^}]*min-height:\s*56px/s);
+  assert.match(css, /\.bottom-tab \.stacked-tab-label\s*\{[^}]*white-space:\s*normal/s);
   assert.match(css, /\.home-details-grid\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.homeowner-details-panel\s*\{[^}]*padding:\s*clamp\(20px,\s*5vw,\s*30px\)/s);
   assert.match(css, /\.home-details-grid input\s*\{[^}]*width:\s*100%/s);
@@ -55,6 +57,12 @@ test("home details save into selectable records and signed homes can be archived
   assert.match(app, /\.update\(\{ archived_at: archivedAt \}\)/);
   assert.match(app, /function restoreArchivedHome\(/);
   assert.match(app, /filter\(\(homesite\) => !isHomeArchived\(homesite\)\)/);
+  assert.match(app, /label:\s*"NHO PDF"[\s\S]*?action:\s*"nho-pdf"/s);
+  assert.match(app, /label:\s*"Final PDF"[\s\S]*?action:\s*"final-pdf"/s);
+  assert.match(app, /async function viewArchivedHomePdf\(/);
+  assert.match(app, /createNhoSignoffPdf\(record,\s*\{\s*mode:\s*"view",\s*viewer\s*\}\)/);
+  assert.match(app, /createSignedAcceptancePdf\(record,\s*\{\s*mode:\s*"view",\s*viewer\s*\}\)/);
+  assert.match(app, /function openGeneratedPdfForViewing\(/);
 });
 
 test("photos require a selected Supabase-backed home before upload", () => {
@@ -117,7 +125,7 @@ test("NHO signoff lists all entered items and keeps its signatures separate", ()
   assert.match(app, /function renderNhoSignoff\(\)/);
   assert.match(app, /acceptance\.nhoSignatures\[buyerKey\]/);
   assert.match(app, /async function acceptNhoAndCreatePdf\(\)/);
-  assert.match(app, /async function createNhoSignoffPdf\(\)/);
+  assert.match(app, /async function createNhoSignoffPdf\(record = null, output = \{\}\)/);
   assert.match(app, /"NEW HOME ORIENTATION SIGNOFF"/);
   assert.match(app, /"ORIENTATION ITEMS"/);
   assert.match(app, /nhoSignatures:\s*acceptance\.nhoSignatures/);

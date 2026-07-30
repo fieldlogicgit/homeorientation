@@ -527,9 +527,9 @@ body[data-theme="dark"] .bottom-nav {
 
 .bottom-tab {
   display: grid;
-  grid-template-rows: 22px 12px;
+  grid-template-rows: 22px 20px;
   gap: 2px;
-  min-height: 48px;
+  min-height: 56px;
   place-items: center;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -572,6 +572,13 @@ body[data-theme="dark"] .bottom-nav {
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.bottom-tab .stacked-tab-label {
+  overflow: visible;
+  line-height: 0.95;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .bottom-tab.active {
@@ -3130,7 +3137,7 @@ body.signature-tool-open {
 .home-record-actions {
   display: grid;
   gap: 8px;
-  min-width: 112px;
+  min-width: 120px;
 }
 
 .home-record-button,

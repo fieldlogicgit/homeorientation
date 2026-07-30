@@ -5185,10 +5185,17 @@ function handleActiveHomeListClick(event) {
   selectActiveHome(button.dataset.communityId, button.dataset.homeId);
 }
 
-function handleArchivedHomeListClick(event) {
-  const button = event.target.closest("[data-home-action='restore']");
+async function handleArchivedHomeListClick(event) {
+  const button = event.target.closest("[data-home-action]");
   if (!button) return;
-  restoreArchivedHome(button.dataset.communityId, button.dataset.homeId);
+  const action = button.dataset.homeAction;
+  if (action === "restore") {
+    restoreArchivedHome(button.dataset.communityId, button.dataset.homeId);
+    return;
+  }
+  if (action === "nho-pdf" || action === "final-pdf") {
+    await viewArchivedHomePdf(button, action === "nho-pdf" ? "nho" : "final");
+  }
 }
 
 function findHomeRecord(communityId, homeId) {
@@ -5292,9 +5299,63 @@ function renderHomeRecordCollection(container, records, { archived }) {
     button.dataset.homeId = homesite.id;
     button.textContent = archived ? "Restore home" : "Open home";
     actions.append(button);
+    if (archived) {
+      const acceptance = homesite.acceptance || {};
+      const nhoPdfButton = createArchivedPdfButton({
+        label: "NHO PDF",
+        action: "nho-pdf",
+        communityId: community.id,
+        homeId: homesite.id,
+        available: Boolean(acceptance.nhoAcceptedAt && acceptance.nhoSignatures?.buyer1 && acceptance.nhoSignatures?.buyer2)
+      });
+      const finalPdfButton = createArchivedPdfButton({
+        label: "Final PDF",
+        action: "final-pdf",
+        communityId: community.id,
+        homeId: homesite.id,
+        available: Boolean(acceptance.acceptedAt && acceptance.signatures?.buyer1 && acceptance.signatures?.buyer2)
+      });
+      actions.prepend(nhoPdfButton, finalPdfButton);
+    }
     card.append(main, actions);
     container.append(card);
   });
+}
+
+function createArchivedPdfButton({ label, action, communityId, homeId, available }) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "home-record-button";
+  button.dataset.homeAction = action;
+  button.dataset.communityId = communityId;
+  button.dataset.homeId = homeId;
+  button.disabled = !available;
+  button.textContent = label;
+  button.title = available ? `View ${label}` : `${label} has not been completed`;
+  return button;
+}
+
+async function viewArchivedHomePdf(button, documentType) {
+  const record = findHomeRecord(button.dataset.communityId, button.dataset.homeId);
+  if (!record || !isHomeArchived(record.homesite)) return;
+  const viewer = window.open("about:blank", "_blank");
+  if (viewer) viewer.opener = null;
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = "Opening…";
+  try {
+    if (documentType === "nho") {
+      await createNhoSignoffPdf(record, { mode: "view", viewer });
+    } else {
+      await createSignedAcceptancePdf(record, { mode: "view", viewer });
+    }
+  } catch (error) {
+    if (viewer) viewer.close();
+    alert(error.message || "The signed PDF could not be opened.");
+  } finally {
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
 }
 
 function createHomeStatusValue(text) {
@@ -5957,10 +6018,10 @@ function buildAcceptanceSnapshot() {
   };
 }
 
-async function createSignedAcceptancePdf() {
+async function createSignedAcceptancePdf(record = null, output = {}) {
   if (!window.jspdf?.jsPDF) throw new Error("The PDF tool is still loading. Try again in a moment.");
   const { jsPDF } = window.jspdf;
-  const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
+  const { community, homesite, acceptance } = record || ensureHomeAcceptanceRecord();
   const address = getSiteFieldValue(homesite, "Address") || homesite.name;
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const page = { width: 612, height: 792, margin: 42 };
@@ -5982,13 +6043,18 @@ async function createSignedAcceptancePdf() {
   doc.text(`Accepted ${formatTimestamp(acceptance.acceptedAt)}`, page.margin, Math.min(page.height - 30, y + 28));
   addPdfPageNumbers(doc, page, colors);
   const fileBase = (address || "home").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-  await shareOrDownloadPdf(doc, `${fileBase || "home"}-signed-acceptance.pdf`, `${address} signed home acceptance`, true);
+  const fileName = `${fileBase || "home"}-signed-acceptance.pdf`;
+  if (output.mode === "view") {
+    openGeneratedPdfForViewing(doc, fileName, output.viewer);
+    return;
+  }
+  await shareOrDownloadPdf(doc, fileName, `${address} signed home acceptance`, true);
 }
 
-async function createNhoSignoffPdf() {
+async function createNhoSignoffPdf(record = null, output = {}) {
   if (!window.jspdf?.jsPDF) throw new Error("The PDF tool is still loading. Try again in a moment.");
   const { jsPDF } = window.jspdf;
-  const { community, homesite, acceptance } = ensureHomeAcceptanceRecord();
+  const { community, homesite, acceptance } = record || ensureHomeAcceptanceRecord();
   const address = getSiteFieldValue(homesite, "Address") || homesite.name;
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const page = { width: 612, height: 792, margin: 42 };
@@ -6007,7 +6073,12 @@ async function createNhoSignoffPdf() {
   doc.text(`Signed ${formatTimestamp(acceptance.nhoAcceptedAt)}`, page.margin, Math.min(page.height - 30, y + 28));
   addPdfPageNumbers(doc, page, colors);
   const fileBase = (address || "home").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-  await shareOrDownloadPdf(doc, `${fileBase || "home"}-nho-signoff.pdf`, `${address} new home orientation signoff`, true);
+  const fileName = `${fileBase || "home"}-nho-signoff.pdf`;
+  if (output.mode === "view") {
+    openGeneratedPdfForViewing(doc, fileName, output.viewer);
+    return;
+  }
+  await shareOrDownloadPdf(doc, fileName, `${address} new home orientation signoff`, true);
 }
 
 function addAcceptancePdfHeader(doc, page, colors, community, address, acceptance, title = "FINAL SIGNOFF") {
@@ -8779,6 +8850,18 @@ async function shareOrDownloadPdf(doc, fileName, title, downloadOnly = false) {
   }
 
   doc.save(safeFileName);
+}
+
+function openGeneratedPdfForViewing(doc, fileName, viewer = null) {
+  const pdfBlob = doc.output("blob");
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  if (viewer) {
+    viewer.document.title = fileName;
+    viewer.location.replace(pdfUrl);
+  } else {
+    window.location.href = pdfUrl;
+  }
+  setTimeout(() => URL.revokeObjectURL(pdfUrl), 300000);
 }
 
 async function getPhotoDataUrl(photo) {
